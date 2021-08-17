@@ -1,0 +1,24 @@
+{ "columns":16,
+ "image":"tileset_graphics\/world0p0.png",
+ "imageheight":256,
+ "imagewidth":256,
+ "margin":0,
+ "name":"world0p0",
+ "spacing":0,
+ "tilecount":256,
+ "tiledversion":"1.7.2",
+ "tileheight":16,
+ "tiles":[
+        {
+         "id":65,
+         "type":"mush1"
+        }, 
+        {
+         "id":66,
+         "type":"mush2"
+        }],
+ "tilewidth":16,
+ "transparentcolor":"#3cbcfc",
+ "type":"tileset",
+ "version":"1.6"
+}
