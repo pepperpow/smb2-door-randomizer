@@ -24,13 +24,26 @@ with open("README.md", "r") as fh:
 
 # setuptools.setup(**setup_desc)
 
+# base="Win32GUI" should be used only for Windows GUI app
+base = None
+if sys.platform == "win32":
+    base = "Win32GUI"
+
 freeze_desc = {
     "name": "pepperpow", # Replace with your own username
-    "version": "0.5",
+    "version": "0.49",
     "description": "A small example package",
-    "executables": [cx_Freeze.Executable(
-        'smb2_door_randomizer.py', base="Win32GUI", targetName="SMB2DR.exe"
-    )]
+    "options":{
+        "build_exe": {'include_files': ['extras', 'icons', 'my_characters', 'my_levels', 'patch_data', 'README.md']}
+    } ,
+    "executables": [
+    cx_Freeze.Executable(
+        'smb2_door_randomizer.py', base=base, targetName="smb2_door_randomizer.exe", icon='icons/iconApp.ico'
+    ),
+    cx_Freeze.Executable(
+        'raw_to_tiled.py', targetName="raw_to_tiled.exe", icon='icons/iconEx.ico',
+    )
+    ]
 }
 
 cx_Freeze.setup(**freeze_desc)
