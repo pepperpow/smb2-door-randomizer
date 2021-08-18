@@ -2688,6 +2688,11 @@
       "type": "string"
     },
     {
+      "name": "transition_page1",
+      "value": "door",
+      "type": "string"
+    },
+    {
       "name": "mush_1",
       "value": 0,
       "type": "int"

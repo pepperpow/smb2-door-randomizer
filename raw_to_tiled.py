@@ -2,7 +2,7 @@ import argparse
 import glob, json, os, re, shutil
 
 import game_lib.smb2 as smb2
-from game_lib.smb2 import EnemyName, TileName
+from game_lib.smb2 import EnemyName, TileName, ClimbableTiles, DoorTiles
 from game_lib.level_tokenize import level_h, tokenize
 
 file_defaults = {
@@ -53,6 +53,7 @@ custom_defaults = {
         "value":"ff"
     }
 
+trans_name = 'transition_page{}'
 
 def handle_dir(dir):
     my_files = glob.glob(os.path.join(dir, '*.json'))
@@ -74,7 +75,6 @@ def handle_dir(dir):
                     "world": my_level['my_level_world_num'],
                     **smb2.read_header(my_level['my_header'])
                 }
-                print(parsed_file)
 
                 pages = parsed_file["pages"]+1
                 isVertical = parsed_file["vertical"]
@@ -121,9 +121,16 @@ def handle_dir(dir):
                 for c in my_commands:
                     if chr(TileName.JarTopGeneric) in c.tiles:
                         jar_accessed[4] = 1
-                    if chr(TileName.JarTopPointer) in c.tiles:
-                        jar_dest = doors_ptrs.get(c.page)
-                        if jar_dest: jar_accessed[jar_dest[1]] = 2
+                    if doors_ptrs.get(c.page):
+                        my_dest = doors_ptrs[c.page]
+                        if chr(TileName.JarTopPointer) in c.tiles:
+                            jar_accessed[my_dest[1]] = 2
+                            parsed_file[trans_name.format(c.page)] = 'jar'
+                        if any([chr(x) in c.tiles for x in smb2.DoorTiles]):
+                            parsed_file[trans_name.format(c.page)] = 'door'
+                        if not parsed_file.get(trans_name.format(c.page)):
+                            if any([chr(x) in c.tiles for x in smb2.ClimbableTiles]):
+                                parsed_file[trans_name.format(c.page)] = 'vine'
                     if chr(TileName.SubspaceMushroom1) in c.tiles:
                         parsed_file['mush_1'] = c.page
                     if chr(TileName.SubspaceMushroom2) in c.tiles:
@@ -134,6 +141,8 @@ def handle_dir(dir):
                         "type": 'int' if isinstance(y, int) else 'string'
                     } for x, y in parsed_file.items() if x != 'vertical' ]
                 level_total.append(final_file)
+
+                print(parsed_file)
 
         # add Jar shiftings
         for x in level_total:

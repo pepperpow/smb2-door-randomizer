@@ -2695,6 +2695,51 @@
       "type": "string"
     },
     {
+      "name": "transition_page1",
+      "value": "vine",
+      "type": "string"
+    },
+    {
+      "name": "transition_page3",
+      "value": "vine",
+      "type": "string"
+    },
+    {
+      "name": "transition_page5",
+      "value": "vine",
+      "type": "string"
+    },
+    {
+      "name": "transition_page8",
+      "value": "vine",
+      "type": "string"
+    },
+    {
+      "name": "transition_page6",
+      "value": "vine",
+      "type": "string"
+    },
+    {
+      "name": "transition_page9",
+      "value": "door",
+      "type": "string"
+    },
+    {
+      "name": "transition_page2",
+      "value": "vine",
+      "type": "string"
+    },
+    {
+      "name": "transition_page4",
+      "value": "door",
+      "type": "string"
+    },
+    {
+      "name": "transition_page7",
+      "value": "door",
+      "type": "string"
+    },
+    {
       "name": "mush_2",
       "value": 8,
       "type": "int"
@@ -2703,6 +2748,11 @@
       "name": "mush_1",
       "value": 0,
       "type": "int"
+    },
+    {
+      "name": "transition_page0",
+      "value": "door",
+      "type": "string"
     },
     {
       "name": "is_jar",

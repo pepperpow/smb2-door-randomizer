@@ -1,11 +1,11 @@
 
-import random
+import random, copy
 from types import SimpleNamespace
 
 import game_lib.smb2 as smb2
-from game_lib.smb2 import EnemyName
+from game_lib.smb2 import ClimbableTiles, EnemyName
 import game_lib.level_tokenize as token
-from game_lib.level_modify import convertMyTile, convertMyEnemy
+from game_lib.level_modify import convertMyTile, convertMyEnemy, apply_command
 
 c_rand = ['blue', 'black', 'green', 'purple']
 up = [0, -1]
@@ -112,6 +112,8 @@ def level_stringer(my_rom, levels, my_mem_locs):
 
 hawks = [EnemyName.HawkmouthLeft, EnemyName.HawkmouthRight]
 
+# tl.smb2command(0, 4, 9, 12, 'REPEAT', ''.join([chr(TileName.Sky)]*30), 0, 999),
+
 def room_stringer(levels, number_of_levels):
     # TODO: String Rooms together
     all_rooms = [i for sub in levels for i in sub]
@@ -123,12 +125,12 @@ def room_stringer(levels, number_of_levels):
     for r in all_rooms:
         if r: rooms_by_door_size[len(r.doors)].append(r)
     my_levels = []
-    # random.shuffle(all_start_rooms)
-    # random.shuffle(all_end_rooms)
-    for x in range(number_of_levels):
+    for _ in range(number_of_levels):
         my_new_level = []
-        start = random.choice(all_start_rooms)
-        end = random.choice(all_end_rooms)
+        start = copy.deepcopy(random.choice(all_start_rooms))
+        end = copy.deepcopy(random.choice(all_end_rooms))
+
+        start_entrance = sorted(start.doors.keys())[-1]
 
         if len(end.doors) == 1:
             end_entrance = 0
@@ -136,9 +138,12 @@ def room_stringer(levels, number_of_levels):
             valid_doors = [x for x in end.doors if end.doors[x][0] < 10]
             end_entrance = sorted(valid_doors)[0]
 
-        start_entrance = sorted(start.doors.keys())[-1]
-        end.doors[end_entrance] = (0, start_entrance)
+        print(start_entrance, end_entrance, len(start.doors), len(end.doors))
+
         start.doors[start_entrance] = (1, end_entrance)
+
+        end.doors[end_entrance] = (0, start_entrance)
+
         my_new_level += [start, end] + [None]*8
         my_levels.append(my_new_level)
     return my_levels

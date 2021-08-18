@@ -8,15 +8,6 @@
  "tilecount":256,
  "tiledversion":"1.7.2",
  "tileheight":16,
- "tiles":[
-        {
-         "id":65,
-         "type":"mush1"
-        }, 
-        {
-         "id":66,
-         "type":"mush2"
-        }],
  "tilewidth":16,
  "transparentcolor":"#3cbcfc",
  "type":"tileset",

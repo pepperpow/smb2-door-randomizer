@@ -2696,6 +2696,41 @@
       "type": "int"
     },
     {
+      "name": "transition_page1",
+      "value": "vine",
+      "type": "string"
+    },
+    {
+      "name": "transition_page3",
+      "value": "vine",
+      "type": "string"
+    },
+    {
+      "name": "transition_page0",
+      "value": "door",
+      "type": "string"
+    },
+    {
+      "name": "transition_page2",
+      "value": "vine",
+      "type": "string"
+    },
+    {
+      "name": "transition_page4",
+      "value": "vine",
+      "type": "string"
+    },
+    {
+      "name": "transition_page8",
+      "value": "vine",
+      "type": "string"
+    },
+    {
+      "name": "transition_page5",
+      "value": "vine",
+      "type": "string"
+    },
+    {
       "name": "is_jar",
       "type": "int",
       "value": 0

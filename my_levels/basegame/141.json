@@ -2644,6 +2644,16 @@
       "type": "string"
     },
     {
+      "name": "transition_page0",
+      "value": "vine",
+      "type": "string"
+    },
+    {
+      "name": "transition_page8",
+      "value": "vine",
+      "type": "string"
+    },
+    {
       "name": "mush_1",
       "value": 2,
       "type": "int"

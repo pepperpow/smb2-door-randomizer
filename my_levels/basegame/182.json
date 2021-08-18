@@ -2617,6 +2617,11 @@
       "type": "string"
     },
     {
+      "name": "transition_page3",
+      "value": "vine",
+      "type": "string"
+    },
+    {
       "name": "is_jar",
       "type": "int",
       "value": 0

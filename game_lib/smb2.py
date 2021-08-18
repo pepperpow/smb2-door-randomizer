@@ -90,18 +90,22 @@ def enemies_to_bytes(enemies, vertical):
             page = ( page * 15 + y ) // 16
             my_enemies_transcribed.append((i, x, new_y, page))
 
-    for page in range(10):
+    highest_page = max([0] + [x[3]+1 for x in enemies])
+    for page in range(highest_page+1):
         my_enemy_of_page = [x for x in my_enemies_transcribed if x[3] == page]
         byte_arr.append(len(my_enemy_of_page)*2 + 1)
         for e in my_enemy_of_page:
+            if page > 8:
+                print('end of room', str(EnemyName(e[0])))
             i, x, y, page = e
             byte_arr.append(i)
             byte_arr.append((x << 4) + y)
     return bytes(byte_arr)
 
 class LevelStorage():
+    NEXT_LEVEL_PTR = 10 # rooms are 0-9, next level is 10
     class Room():
-        def __init__(self, data, enemies, header, doors):
+        def __init__(self, data, enemies, header, doors, transitions):
             self.data = data
             self.data_modified = None
             self.enemies = enemies
@@ -109,6 +113,7 @@ class LevelStorage():
             self.world = header['world']
             self.vertical = header['horizontal'] == 0
             self.doors = doors
+            self.transitions = transitions
             self.is_jar = header['is_jar']
             self.flags = {} # inconsistent usage, should probably make any level modifications a new room
 
@@ -137,15 +142,19 @@ class LevelStorage():
                     'type': e['gid'] - 257
                 } for e in room_dict['layers'][1]['objects']
             ]
-            my_doors = {
+            my_doors = { # pagenumber: (room, page)
                 int(re.search(r'\d+', x).group()): tuple([int(z) for z in y.split(',')])
                         for x,y in my_header.items() if 'doorptr_page' in x
+            }
+            transitions = {
+                int(re.search(r'\d+', x).group()): y
+                        for x,y in my_header.items() if 'transition_page' in x
             }
             for tile in my_room_data:
                 if tile == TileName.JarTopGeneric:
                     accessed_ids.add(4)
             accessed_ids = accessed_ids.union(set([x[0]%10 for x in my_doors.values()]))
-            my_level.append(LevelStorage.Room(my_room_data, my_enemies, my_header, my_doors))
+            my_level.append(LevelStorage.Room(my_room_data, my_enemies, my_header, my_doors, transitions))
         my_level = [level if n in accessed_ids else None for n, level in enumerate(my_level)]
         return my_level
 
@@ -613,6 +622,14 @@ ClimbableTiles = [
     TileName.LadderStandable,
     TileName.LadderStandableShadow,
     TileName.ChainStandable
+]
+
+DoorTiles = [
+    TileName.DoorBottom,
+    TileName.DoorBottomLock,
+    TileName.LightDoor,
+    TileName.LightDoorEndLevel,
+    TileName.DarkDoor
 ]
 
 SpecialTiles = [

@@ -2819,6 +2819,16 @@
       "type": "string"
     },
     {
+      "name": "transition_page9",
+      "value": "vine",
+      "type": "string"
+    },
+    {
+      "name": "transition_page8",
+      "value": "door",
+      "type": "string"
+    },
+    {
       "name": "mush_1",
       "value": 1,
       "type": "int"
@@ -2827,6 +2837,16 @@
       "name": "mush_2",
       "value": 9,
       "type": "int"
+    },
+    {
+      "name": "transition_page7",
+      "value": "door",
+      "type": "string"
+    },
+    {
+      "name": "transition_page0",
+      "value": "door",
+      "type": "string"
     },
     {
       "name": "is_jar",

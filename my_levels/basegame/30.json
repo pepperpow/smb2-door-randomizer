@@ -2644,6 +2644,11 @@
       "type": "int"
     },
     {
+      "name": "transition_page9",
+      "value": "door",
+      "type": "string"
+    },
+    {
       "name": "is_jar",
       "type": "int",
       "value": 0

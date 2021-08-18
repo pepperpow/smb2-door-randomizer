@@ -2765,9 +2765,19 @@
       "type": "string"
     },
     {
+      "name": "transition_page9",
+      "value": "door",
+      "type": "string"
+    },
+    {
       "name": "mush_1",
       "value": 5,
       "type": "int"
+    },
+    {
+      "name": "transition_page0",
+      "value": "door",
+      "type": "string"
     },
     {
       "name": "is_jar",

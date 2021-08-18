@@ -132,6 +132,16 @@
          "value":0
         }, 
         {
+         "name":"transition_page0",
+         "type":"string",
+         "value":"vine"
+        }, 
+        {
+         "name":"transition_page4",
+         "type":"string",
+         "value":"door"
+        }, 
+        {
          "name":"unk1",
          "type":"int",
          "value":0

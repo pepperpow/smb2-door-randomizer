@@ -2599,9 +2599,24 @@
       "type": "int"
     },
     {
+      "name": "transition_page5",
+      "value": "door",
+      "type": "string"
+    },
+    {
       "name": "mush_1",
       "value": 2,
       "type": "int"
+    },
+    {
+      "name": "transition_page1",
+      "value": "vine",
+      "type": "string"
+    },
+    {
+      "name": "transition_page0",
+      "value": "door",
+      "type": "string"
     },
     {
       "name": "is_jar",

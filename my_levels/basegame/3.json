@@ -2550,6 +2550,21 @@
       "type": "string"
     },
     {
+      "name": "transition_page0",
+      "value": "door",
+      "type": "string"
+    },
+    {
+      "name": "transition_page1",
+      "value": "vine",
+      "type": "string"
+    },
+    {
+      "name": "transition_page2",
+      "value": "door",
+      "type": "string"
+    },
+    {
       "name": "is_jar",
       "type": "int",
       "value": 0

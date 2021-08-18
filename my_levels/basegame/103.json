@@ -2562,6 +2562,11 @@
       "type": "string"
     },
     {
+      "name": "transition_page3",
+      "value": "door",
+      "type": "string"
+    },
+    {
       "name": "mush_2",
       "value": 3,
       "type": "int"

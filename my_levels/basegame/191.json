@@ -2649,6 +2649,21 @@
       "type": "string"
     },
     {
+      "name": "transition_page6",
+      "value": "vine",
+      "type": "string"
+    },
+    {
+      "name": "transition_page0",
+      "value": "door",
+      "type": "string"
+    },
+    {
+      "name": "transition_page4",
+      "value": "vine",
+      "type": "string"
+    },
+    {
       "name": "is_jar",
       "type": "int",
       "value": 0

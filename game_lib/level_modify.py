@@ -4,6 +4,7 @@ import game_lib.smb2 as smb2
 from game_lib.smb2 import TileName, EnemyName
 
 def find_sturdy_surface(page, my_room_map):
+    # this used numpy...
     positions = [(x+1,y) for x in range(14) for y in [l + page*15 + 2 for l in range(13)]]
     random.shuffle(positions)
     for p in positions:
@@ -22,13 +23,7 @@ def find_sturdy_surface(page, my_room_map):
 def invert_level(room):
     my_pages = room.header['pages'] + 1
     room.flags['inverted'] = True
-    # if room.vertical:
-    #     my_room_map = np.array([invertTile.get(x, x) for x in room.data]).reshape(len(room.data)//16,16)
-    #     my_room_map = np.array([x[::-1] for x in my_room_map]).reshape(len(room.data),)
-    # else:
-    #     my_room_map = np.array([invertTile.get(x, x) for x in room.data]).reshape(len(room.data)//160,160)
-    #     my_room_map = [x[:16*my_pages] for x in my_room_map]
-    #     my_room_map = np.array([np.resize(x[::-1], (160,)) for x in my_room_map]).reshape(len(room.data),)
+
     if room.vertical:
         my_room_map = [room.data[i:i+16][::-1] for i in range(0, len(room.data), 16)]
     else:
@@ -66,6 +61,21 @@ def apply_command(data, c):
         spots = [((c.x + p)//16)*240 + (c.y*16 + c.page*240) + (c.x+p)%16 for p in range(len(c.tiles))]
     for x, t in zip(spots, c.tiles):
         data[x] = ord(t)
+
+
+def query_tiles(room, x, y, page, length, vertical_command=False):
+    if room.vertical:
+        my_room_map = [room.data[i:i+16] for i in range(0, len(room.data), 16)]
+    else:
+        my_room_map = [room.data[i:i+160] for i in range(0, len(room.data), 160)]
+
+    if vertical_command:
+        y += page*15
+        my_room_rows = my_room_map[y:y+length]
+        return [item for sublist in [row[x] for row in my_room_rows] for item in sublist]
+    else:
+        x += page*16
+        return my_room_map[y][x:x+length]
 
 
 convertFromIce = {

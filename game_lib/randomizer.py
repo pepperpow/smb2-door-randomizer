@@ -314,11 +314,11 @@ def write_rooms_to_rom(my_rom, room_datas, my_mem_locs):
         my_rom[my_mem_locs['EnemyPointers_Level_1_1_Lo'] + ( room_cnt % 10 ) + (room_cnt//10)*20] = my_emy_loc % 256
         if my_room.info.is_jar:
             print('IN THIS JAR,', my_room.info.is_jar, [(str(smb2.EnemyName(x[0])), *x[1:]) for x in my_room.enemies])
+        enemy_tuples = [tuple(x) for x in my_room.enemies]
+        my_amy_bytes = [x for x in smb2.enemies_to_bytes(enemy_tuples, my_room.info.vertical)]
         if my_room.info.is_jar == 1:
-            enemy_tuples = [tuple([*x[:3], 10]) for x in my_room.enemies]
-        else:
-            enemy_tuples = [tuple(x) for x in my_room.enemies]
-        enemy_bank.extend([x for x in smb2.enemies_to_bytes(enemy_tuples, my_room.info.vertical)])
+            my_amy_bytes = [1]*10 + my_amy_bytes
+        enemy_bank.extend(my_amy_bytes)
 
     my_rom[bnk_num*BANK_SIZE: bnk_num*BANK_SIZE + len(new_bank)] = new_bank
     my_rom[enemy_locs: enemy_locs + len(enemy_bank)] = enemy_bank

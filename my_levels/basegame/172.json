@@ -2622,6 +2622,16 @@
       "type": "string"
     },
     {
+      "name": "transition_page7",
+      "value": "vine",
+      "type": "string"
+    },
+    {
+      "name": "transition_page0",
+      "value": "door",
+      "type": "string"
+    },
+    {
       "name": "mush_2",
       "value": 5,
       "type": "int"
