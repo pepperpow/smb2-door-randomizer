@@ -104,6 +104,7 @@ layout_quick = [
         sg.Button('15 levels', key="basicMedium", font=('System', 12), metadata={'k':15}),
         sg.Button('20 levels', key="basicLong", font=('System', 12), metadata={'k':20})],
     [sg.Text('Randomly string rooms together into new levels', font=('', 8))],
+    [sg.Text('  (Still being tested as of 0.49!  Disable World 7 Level 2 manually, and Refer to README)', font=('', 8))],
     [ sg.Image(key="imgb", filename="icons/testicon1a.png"),
         sg.Button('3 levels', key="stringMini", font=('System', 12), metadata={'k':3}),
         sg.Button('9 levels', key="stringShort", font=('System', 12), metadata={'k':9}),

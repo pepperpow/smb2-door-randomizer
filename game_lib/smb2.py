@@ -91,7 +91,7 @@ def enemies_to_bytes(enemies, vertical):
             my_enemies_transcribed.append((i, x, new_y, page))
 
     highest_page = max([0] + [x[3]+1 for x in enemies])
-    for page in range(highest_page+1):
+    for page in range(11):
         my_enemy_of_page = [x for x in my_enemies_transcribed if x[3] == page]
         byte_arr.append(len(my_enemy_of_page)*2 + 1)
         for e in my_enemy_of_page:
@@ -622,6 +622,14 @@ ClimbableTiles = [
     TileName.LadderStandable,
     TileName.LadderStandableShadow,
     TileName.ChainStandable
+]
+
+JarTiles = [
+    TileName.JarBottom,
+    TileName.JarMiddle,
+    TileName.JarTopGeneric,
+    TileName.JarTopPointer,
+    TileName.JarTopNonEnterable
 ]
 
 DoorTiles = [

@@ -52,6 +52,11 @@ Changes to gameplay:
 
 This current version is a pared down completion of an original Door Randomizer.  New features will be added over the coming time...
 
+Level Stringer:
+
+- Does not patch levels completely so that they're all playable, and the method is rather simple
+- World 7 Level 2 will softlock, as it hasn't been patched for it!!!  Deselect it in the Level Select menu
+
 Known things to fix:
 
 - Character sheets are not complete, missing some sprite replacements

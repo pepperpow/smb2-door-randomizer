@@ -3,7 +3,7 @@ import random, copy
 from types import SimpleNamespace
 
 import game_lib.smb2 as smb2
-from game_lib.smb2 import ClimbableTiles, EnemyName
+from game_lib.smb2 import ClimbableTiles, EnemyName, TileName
 import game_lib.level_tokenize as token
 from game_lib.level_modify import convertMyTile, convertMyEnemy, apply_command
 
@@ -94,6 +94,9 @@ def level_stringer(my_rom, levels, my_mem_locs):
                     my_room.header['pala'] = 0
                 for c in commands:
                     c.tiles = ''.join([chr(convertMyTile(ord(t), my_world, new_world)) for t in c.tiles])
+                    if 'unlock_me' in my_room.flags:
+                        c.tiles = ''.join(t if ord(t) != TileName.DoorBottomLock else chr(TileName.DoorBottom) for t in c.tiles)
+                        c.tiles = ''.join(t if ord(t) not in smb2.JarTiles else chr(TileName.JumpThroughBlock) for t in c.tiles)
                 
                 my_enemies = [convertMyEnemy(e, my_world, new_world) for e in my_enemies]
 
@@ -125,26 +128,50 @@ def room_stringer(levels, number_of_levels):
     for r in all_rooms:
         if r: rooms_by_door_size[len(r.doors)].append(r)
     my_levels = []
+    eligible_rooms = [x for x in all_rooms if x and len(x.doors) > 1]
     for _ in range(number_of_levels):
-        my_new_level = []
-        start = copy.deepcopy(random.choice(all_start_rooms))
-        end = copy.deepcopy(random.choice(all_end_rooms))
+        new_start = copy.deepcopy(random.choice(all_start_rooms))
+        new_end = copy.deepcopy(random.choice(all_end_rooms))
 
-        start_entrance = sorted(start.doors.keys())[-1]
+        room_picks = random.choices(eligible_rooms, k=random.randint(1,4))
 
-        if len(end.doors) == 1:
-            end_entrance = 0
-        else:
-            valid_doors = [x for x in end.doors if end.doors[x][0] < 10]
-            end_entrance = sorted(valid_doors)[0]
+        my_rooms = [new_start] + [copy.deepcopy(x) for x in room_picks] + [new_end] + [None]*10
 
-        print(start_entrance, end_entrance, len(start.doors), len(end.doors))
+        for x in my_rooms:
+            if x: x.flags['unlock_me'] = True
 
-        start.doors[start_entrance] = (1, end_entrance)
+        my_rooms = my_rooms[:10]
 
-        end.doors[end_entrance] = (0, start_entrance)
+        last_entrance = -1
+        
+        for x in range(len(my_rooms)-1):
+            start = my_rooms[x]
+            if start is None:
+                continue
+            end = my_rooms[x+1]
+            if end is None:
+                continue
 
-        my_new_level += [start, end] + [None]*8
-        my_levels.append(my_new_level)
+            start_entrance = sorted(start.doors.keys())[-1]
+
+            if len(end.doors) == 1:
+                end_entrance = 0
+            else:
+                valid_doors = [x for x in end.doors if end.doors[x][0] < 10]
+                end_entrance = sorted(valid_doors)[0]
+
+            print(start_entrance, end_entrance, len(start.doors), len(end.doors))
+
+            for page in start.transitions:
+                if page != start_entrance and page != last_entrance:
+                    start.doors[page] = (x, page)
+
+            start.doors[start_entrance] = (x+1, end_entrance)
+
+            end.doors[end_entrance] = (x, start_entrance)
+
+            last_entrance = end_entrance
+
+        my_levels.append(my_rooms)
     return my_levels
 

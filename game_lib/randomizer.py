@@ -271,11 +271,10 @@ def write_rooms_to_rom(my_rom, room_datas, my_mem_locs):
             bnk_num += 1
             new_bank = []
 
-        my_data = []
-        extra_byte_blocks = []
+        my_data, extra_byte_blocks = [], []
         # 0x634 == tileset
         # 0x4ee == is_jar
-#         BossHP = $73F2
+        # BossHP = $73F2
         if my_room.info.is_jar != 1:
             my_function = (my_mem_locs['LoadWorldCHRBanks'] % 0x4000) + 0xc000
             my_func_ptr = [my_function >> 8, my_function % 256]
