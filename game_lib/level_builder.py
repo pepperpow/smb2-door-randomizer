@@ -1,4 +1,3 @@
-
 import random, copy
 from types import SimpleNamespace
 
@@ -7,16 +6,7 @@ from game_lib.smb2 import ClimbableTiles, EnemyName, TileName
 import game_lib.level_tokenize as token
 from game_lib.level_modify import convertMyTile, convertMyEnemy, apply_command
 
-c_rand = ['blue', 'black', 'green', 'purple']
-up = [0, -1]
-down = [0, 1]
-left = [-1, 0]
-right = [1, 0]
-poses = [up, down, left, right]
 
-# consider: graph theory to manage levels that only go one way...
-#   each level starts as a node, and internally has a path to each page or section of pages
-#   long since considered using A* pathing to determine this, but for another time or another programmer
 def make_next_level_door(dest_room, cnt):
     if dest_room is not None:
         invert, dest_pages = dest_room.flags.get('inverted'), dest_room.header['pages']
@@ -86,6 +76,7 @@ def level_stringer(my_rom, levels, my_mem_locs):
 
             my_world = my_room.world
             new_world = my_room.flags['convert_world'] if my_world < 6 and not my_room.has_boss else my_world
+            new_world = my_room.flags['convert_world'] if EnemyName.Pidgit not in [e['type'] for e in my_enemies] else my_world
             my_room.header['unk3'] = new_world
             my_enemies = [[e['type'], e['x'], e['y'], e['page']] for e in my_enemies]
 

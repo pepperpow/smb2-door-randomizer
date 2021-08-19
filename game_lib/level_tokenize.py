@@ -149,7 +149,10 @@ def commands_to_level(commands, door_data, pages):
 
         if current_page != c.page:
             # print('PAGING TO', c.page)
-            level_bits.append((0xF0 + c.page))
+            if c.page == 0:
+                level_bits.append((0xF0 + current_page))
+            else:
+                level_bits.append((0xF0 + c.page))
             current_page = c.page
 
         if door_data[current_page] not in [b'\x00\x00', None]:

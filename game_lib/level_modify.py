@@ -3,27 +3,46 @@ import random
 import game_lib.smb2 as smb2
 from game_lib.smb2 import TileName, EnemyName
 
-def find_sturdy_surface(page, my_room_map):
-    # this used numpy...
-    positions = [(x+1,y) for x in range(14) for y in [l + page*15 + 2 for l in range(13)]]
+def find_sturdy_surface(page, my_room_map, vertical):
+    # this used numpy... before
+    # x = 1, 2 ... 15
+    # y = 2 .. 14?
+    if vertical:
+        my_map = my_room_map[15*page:15*page+15]
+        positions = [(x, y) for x in range(1, 14) for y in range(4,14)]
+    else:
+        my_map = [x[page*16:page*16+16] for x in my_room_map]
+        positions = [(x, y) for x in range(1, 14) for y in range(4,14)]
     random.shuffle(positions)
     for p in positions:
-        tile_solid = my_room_map[p[1], p[0]]
+        tile_solid = my_map[p[1]][p[0]]
         if tile_solid in [TileName.Spikes,TileName.POWBlock]:
             continue
         if smb2.get_solidness(tile_solid) > 1:
-            my_tile = my_room_map[p[1]-1, p[0]]
-            if my_tile in [TileName.SubspaceMushroom1, TileName.SubspaceMushroom2, TileName.GrassPotion]:
+            my_tile = my_map[p[1]-1][p[0]]
+            if my_tile in smb2.VitalTiles:
                 continue
-            if smb2.get_solidness(my_room_map[p[1]-1, p[0]]) < 2:
+            if smb2.get_solidness(my_map[p[1]-1][p[0]]) < 2:
                 return p
     return None
+
+def rotate_me_room(room, vertical):
+    # return a map as a 2d array
+    my_pages = room.header['pages'] + 1
+    if vertical:
+        my_room_map = [room.data[i:i+16] for i in range(0, len(room.data), 16)]
+    else:
+        my_room_map = [room.data[i:i+160][:16*my_pages] for i in range(0, len(room.data), 160)]
+        # if my_pages < 10:
+        #     my_room_map = [x + [TileName.Sky]*(10-my_pages)*16 for x in my_room_map]
+    return my_room_map
 
 
 def invert_level(room):
     my_pages = room.header['pages'] + 1
     room.flags['inverted'] = True
 
+    # rotate and invert lines
     if room.vertical:
         my_room_map = [room.data[i:i+16][::-1] for i in range(0, len(room.data), 16)]
     else:

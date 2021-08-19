@@ -201,14 +201,12 @@ def image_to_character(image_file):
                 'meta_info': main_meta,
                 'ex_frames': frame_ex,
                 'ex_meta': frame_ex_meta,
-                'flutter': False,
-                'pwalk': False,
-                'wide': False,
                 'carry': [256-12,256-4,14,6],
+                **{x:False for x in CHAR_FLAGS}
             }
     while len(cmds):
         cmd = cmds.pop().lower()
-        if cmd in ['wide', 'flutter', 'pwalk']:
+        if cmd in CHAR_FLAGS:
             profile[cmd] = True
         if cmd in ['carry']:
             carry_info = []
@@ -227,6 +225,15 @@ def image_to_character(image_file):
 CHAR_ORDER, CHAR_ORDER_SELECT = [0, 3, 1, 2], [0, 1, 3, 2]
 SHEET_NUMS = [0, 0x3c, 4, 0x80]
 EYEFRAME_NUM = 0x3E
+    
+CHAR_FLAGS = {
+    'wide': 0b1000000,
+    'stand': 0b1,
+    'flutter': 0b100,
+    'pwalk': 0b1000,
+    'bjump': 0b10000,
+    'smb1': 0b100000,
+    }
 
 def apply_characters_to_rom(my_rom, list_of_char, my_mem_locs):
     for char_num, my_profile in enumerate(list_of_char):
@@ -277,7 +284,7 @@ def apply_characters_to_rom(my_rom, list_of_char, my_mem_locs):
                 meta_item += 128 if my_profile['sheet_num'][cnt*len(meta_set) + m_cnt] % 2 > 0 else 0
                 my_rom[mem_loc+m_cnt] = meta_item
         
-        # CustomCharFlag_Shrinking = %00000001 unused
+        # CustomCharFlag_Standing = %00000001
         # CustomCharFlag_Running = %00000010 unused
         # CustomCharFlag_Fluttering = %00000100
         # CustomCharFlag_PeachWalk = %00001000
@@ -287,12 +294,9 @@ def apply_characters_to_rom(my_rom, list_of_char, my_mem_locs):
         # CustomCharFlag_WideSprite = %10000000
         mem_loc = my_mem_locs['DokiMode'] + char_num_a
         my_rom[mem_loc] = 0
-        if my_profile['wide']:
-            my_rom[mem_loc] = my_rom[mem_loc] | 0b10000000
-        if my_profile['flutter']:
-            my_rom[mem_loc] = my_rom[mem_loc] | 0b100
-        if my_profile['pwalk']:
-            my_rom[mem_loc] = my_rom[mem_loc] | 0b1000
+        for x in CHAR_FLAGS:
+            if my_profile.get(x):
+                my_rom[mem_loc] |= CHAR_FLAGS[x]
         
         mem_loc = my_mem_locs['CarryYOffsetBigLo'] + char_num_a
         my_rom[mem_loc] = my_profile['carry'][0]

@@ -12,6 +12,7 @@ class Application():
     def __init__(self, filename) -> None:
         self.state = {
             'load_fail': 0,
+            'i_beta_be_off': False,
             'my_header': None,
             'my_rom': None,
             'my_mem_locs': None,
@@ -53,7 +54,7 @@ class Application():
         self.seed_box.Update(self.current_seed)
 
         self.extra_settings = {
-            "invertChance": 10,
+            "invertChance": 20,
             "extraLives": 0,
             "bossMin": -2,
             "bossMax": 2,
@@ -246,6 +247,11 @@ class Application():
 
             window.close()
             return True
+        
+        if 'Enable Beta' in event:
+            self.state['i_beta_be_off'] = not self.state['i_beta_be_off']
+            self.window['betaMap'].Update(visible=self.state['i_beta_be_off'])
+            return True
 
         # If our ROM dne, throw a dialog
         if not self.isRomExist():
@@ -268,7 +274,16 @@ class Application():
                     for x in self.extra_settings:
                         values[x] = self.extra_settings[x]
 
-                    game = randomizer.smb2.LevelStorage(sorted(self.active_levels.values()))
+                    if 'boss' in event:
+                        open_levels = [y for x,y in self.active_levels.items() if 'openworld' in x]
+                        if len(open_levels) == 0:
+                            self.queue.append('Error has occurred: Map-based randomization REQUIRES openworld patched levels, select in Level Select')
+                            self.state['thread_state'] = 3
+                            return True
+                        else:
+                            game = randomizer.smb2.LevelStorage(sorted(open_levels))
+                    else:
+                        game = randomizer.smb2.LevelStorage(sorted(self.active_levels.values()))
 
                     my_new_rom = randomizer.randomize_rom(self.state['my_rom'], self.state['my_mem_locs'], values, game); 
 

@@ -96,7 +96,7 @@ layout_char_select = [
 
 layout_quick = [
     [sg.Text('Select one of the following to automatically generate a playable ROM')],
-    [sg.Text('Level Randomizer (Basic)')],
+    [sg.Frame('Level Randomizer (Basic)', [
     [sg.Text('Play the game as intended, just with scrambled levels!', font=('', 8))],
     [ sg.Image(key="imga", filename="icons/testicon1.png"),
         sg.Button('3 levels', key="basicMini", font=('System', 12), metadata={'k':3}),
@@ -104,19 +104,29 @@ layout_quick = [
         sg.Button('15 levels', key="basicMedium", font=('System', 12), metadata={'k':15}),
         sg.Button('20 levels', key="basicLong", font=('System', 12), metadata={'k':20})],
     [sg.Text('Randomly string rooms together into new levels', font=('', 8))],
-    [sg.Text('  (Still being tested as of 0.49!  Disable World 7 Level 2 manually, and Refer to README)', font=('', 8))],
+    [sg.Text('  (Still being tested as of 0.49!  Deselect 7-2 in Level Select, or use openworld', font=('', 8))],
     [ sg.Image(key="imgb", filename="icons/testicon1a.png"),
         sg.Button('3 levels', key="stringMini", font=('System', 12), metadata={'k':3}),
         sg.Button('9 levels', key="stringShort", font=('System', 12), metadata={'k':9}),
         sg.Button('15 levels', key="stringMedium", font=('System', 12), metadata={'k':15}),
         sg.Button('20 levels', key="stringLong", font=('System', 12), metadata={'k':20})],
-    # [sg.Text('Boss Hunter')],
-    # [sg.Text('Find and defeat X amount of bosses, locked behind doors', font=('', 8))],
-    # [sg.Image(filename="icons/testicon2.png"),
-    #     sg.Button('Just Wart', key="bossWart", font=('System', 12), metadata= {'k': 12, 'boss': 0}),
-    #     sg.Button('3 Bosses', key="bossShort", font=('System', 12), metadata= {'k': 12, 'boss': 3}),
-    #     sg.Button('5 Bosses', key="bossMedium", font=('System', 12), metadata={'k': 15, 'boss': 5}),
-    #     sg.Button('7 Bosses', key="bossLong", font=('System', 12), metadata=  {'k': 20, 'boss': 7})],
+    ])],
+    [sg.Frame('Door Randomizer Beta', [
+    [sg.Text('Boss Hunter')],
+    [sg.Text('Find and defeat X amount of bosses, locked behind doors', font=('', 8))],
+    [sg.Text('  (Still being tested as of 0.49!  MANUALLY select only openworld levels in Level Select)', font=('', 8))],
+    [sg.Image(filename="icons/testicon2.png"),
+        sg.Button('1 Boss', key="bossWart", font=('System', 12), metadata= {'k': 12, 'boss': 1}),
+        sg.Button('3 Bosses', key="bossShort", font=('System', 12), metadata= {'k': 12, 'boss': 3}),
+        sg.Button('5 Bosses', key="bossMedium", font=('System', 12), metadata={'k': 15, 'boss': 5}),
+        sg.Button('7 Bosses', key="bossLong", font=('System', 12), metadata=  {'k': 20, 'boss': 7})],
+    [
+    sg.Checkbox('Shuffle Level Order', key='betaShuffleLevel'), 
+    sg.Checkbox('Room Order', key='betaShuffleRoom'), 
+    sg.Checkbox('Lock Boss Doors', key='betaLockedDoors')
+    ],
+    ], key='betaMap'), 
+    ],
     # [sg.Text('Crystal Finder')],
     # [sg.Text('Find and collect X amount of orbs by defeating Birdos, finding at end of levels or in subspace', font=('', 8))],
     # [sg.Image(filename="icons/testicon3.png"), sg.Image(filename="icons/testicon3a.png"),
@@ -162,6 +172,7 @@ layout_quick = [
         sg.Button('Character Select', button_color='#e7cb52'),
         sg.Button('Level Select', button_color='#e7cb52'),
         sg.Button('Extra Settings', button_color='#e7cb52'),
+        # sg.Button('Enable Beta', button_color='#e7cb52'),
         ]] , justification='right', pad=(10,0)) ]
 ]
 
@@ -180,7 +191,9 @@ layout_quick = [
 layout_main = [
     [sg.Button('Load File'), sg.Text('Seed'), seed_box, sg.Button('Randomize Seed')],
     [sg.TabGroup(
-        [ [sg.Tab('Quick Start', layout_quick, pad=(20,20)), ] ]
-    )]
+        [ 
+            [sg.Tab('Quick Start', layout_quick, element_justification='left' , pad=(20,20)),
+            # sg.Tab('Debug Output', [[sg.Output(size=(80,20), expand_y=True, font=('', 7))]])
+        ] ])]
 ]
 # sg.Tab('Levels', layout_level_select), 

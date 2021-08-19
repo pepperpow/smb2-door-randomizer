@@ -4,6 +4,7 @@ from binascii import crc32
 import game_lib.smb2 as smb2
 import game_lib.level_modify as modify
 import game_lib.level_builder as builder
+import game_lib.map_builder as map_builder
 import game_lib.character as character
 
 def write_seed_to_screen(my_rom, my_mem_locs, text):
@@ -25,6 +26,9 @@ def randomize_rom(my_rom, my_mem_locs, values, game):
     random.seed(current_seed)
 
     my_k = values['levelAmount'] if 'Generate' in event else metadata.get('k', 12)
+    my_boss_cnt = values['bossCnt'] if 'Generate' in event else metadata.get('boss', 1)
+    my_new_rom[my_mem_locs['BossCondition']] = my_boss_cnt
+
     my_new_rom[my_mem_locs['StartingTransition'] + 1] = 0
     my_new_rom[my_mem_locs['StartingPage'] + 1] = 0
 
@@ -51,6 +55,8 @@ def randomize_rom(my_rom, my_mem_locs, values, game):
     random.seed(current_seed)
     
     all_levels = [i for sublist in game.worlds for i in sublist if i[0] or any(i)] # remove empty levels
+    while len(all_levels) < my_k:
+        all_levels.append(copy.deepcopy(random.choice(all_levels)))
     my_boss_rooms = [x for x in [i for sublist in all_levels for i in sublist] if x is not None and x.has_boss]
 
     if 'string' in event:
@@ -59,14 +65,14 @@ def randomize_rom(my_rom, my_mem_locs, values, game):
         my_choices = random.sample(all_levels, k=my_k)
 
     # Modify Levels to inject bosses every third Level
-    if any(x in event for x in ['basic', 'Linear', 'string']):
-        for cnt, level in enumerate(my_choices):
-            # print('non-null rooms', len([x for x in my_choices[cnt] if x]))
-            my_choices[cnt] = [room if room not in my_boss_rooms else None for room in level]
-            if cnt % 3 == 2:
+    for cnt, level in enumerate(my_choices):
+        # print('non-null rooms', len([x for x in my_choices[cnt] if x]))
+        my_choices[cnt] = [room if room not in my_boss_rooms else None for room in level]
+        if any(x in event for x in ['basic', 'Linear', 'string']):
+            if cnt % 3 == 2 or cnt >= 19:
                 open_room = my_choices[cnt].index(None)
                 # print('open room', open_room)
-                my_choices[cnt][open_room] = random.choice(my_boss_rooms)
+                my_choices[cnt][open_room] = random.choice(copy.deepcopy(my_boss_rooms))
                 print('Adding Boss Room')
 
     # Set up Level variables and patch Original Levels
@@ -93,12 +99,30 @@ def randomize_rom(my_rom, my_mem_locs, values, game):
             else:
                 room.flags['convert_world'] = room.world
 
+    if 'boss' in event:
+        for room in my_boss_rooms:
+            room.flags['force_character'] = random.randint(0,3)
+            room.flags['boss_health'] = random.randint(values['bossMin'], values['bossMax'])
+            room.flags['convert_world'] = room.world
+
         # patch levels if they need them here
     
     if any(x in event for x in ['basic', 'Linear', 'string']):
         rooms_data = builder.level_stringer(my_new_rom, my_choices, my_mem_locs)
         write_rooms_to_rom(my_new_rom, rooms_data, my_mem_locs)
         my_new_rom[my_mem_locs['BossCondition']] = 0
+
+    if any(x in event for x in ['boss']):
+        # pick level
+        if not values['betaShuffleLevel']:
+            my_choices = sorted(my_choices, key=lambda x: x[0].header['id'])
+        rooms = [x for x in [item for sublist in my_choices for item in sublist] if x is not None]
+        if values['betaShuffleRoom']:
+            rooms = random.choices(rooms, k=len(rooms))
+        my_map, slots, edges_by_level = map_builder.map_maker(rooms, my_boss_rooms)
+        rooms_data = map_builder.map_stringer(slots, edges_by_level, my_mem_locs, boss_lock=values['betaLockedDoors'])
+        print('\n'.join([str(row) for row in my_map]))
+        write_rooms_to_rom(my_new_rom, rooms_data, my_mem_locs)
 
     # print('Winning Level ID', my_new_rom[my_mem_locs['WinLevel']])
     print('TransitionSTart', my_new_rom[my_mem_locs['StartingTransition'] + 1])
@@ -119,8 +143,8 @@ def randomize_rom(my_rom, my_mem_locs, values, game):
     return my_new_rom
 
 RANDOM_NAMES_EXTRA = [
-    'HABBER', 'BABBER', 'BOB',
-    'ISLE', 'IWOL', 'YOINK', 'ROBERT'
+    'HABBER', 'BABBER', 'BOB', 'HABBO', 'APPO',
+    'ISLE', 'IWOL', 'YOINK', 'ROBERT', 'DOINK'
 ]
 
 def randomize_characters(my_rom, values, active_chars, mem_locs):
@@ -157,6 +181,8 @@ def randomize_text(my_rom, values, mem_locs):
     custom_text_lines = ['WITH {} LEVELS'.format(my_k) ]
     if my_rom[mem_locs['WinLevel']] != 0xFF:
         custom_text_lines.append('DEFEAT ENDBOSS')
+    if my_rom[mem_locs['BossCondition']] > 0:
+        custom_text_lines.append('DEFEAT {} BOSSES'.format(my_rom[mem_locs['BossCondition']]))
     if my_rom[mem_locs['IndependentLives']] > 0:
         custom_text_lines.append('{} Life Survival'.format(my_rom[mem_locs['ContinueGame'] + 1]))
     custom_text_lines = custom_text_lines[:3]
@@ -279,6 +305,8 @@ def write_rooms_to_rom(my_rom, room_datas, my_mem_locs):
             my_function = (my_mem_locs['LoadWorldCHRBanks'] % 0x4000) + 0xc000
             my_func_ptr = [my_function >> 8, my_function % 256]
             extra_byte_blocks.append(bytes([0xfc, 0x06, 0x34, 0x01, my_room.world] + [0xfa, *my_func_ptr]))
+        if my_room.info.is_jar == 2:
+            extra_byte_blocks.append(bytes([0xfc, 0x04, 0xee, 0x01, 0x02]))
         if 'boss_health' in my_room.info.flags:
             extra_byte_blocks.append(bytes([0xfc, 0x73, 0xf2, 0x01, (256 + my_room.info.flags['boss_health'])&0xFF ]))
         if 'force_character' in my_room.info.flags:
