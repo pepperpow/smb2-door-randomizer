@@ -11,9 +11,12 @@ While currently under development, releases will be placed at https://github.com
 ### Thanks to
 
 KMCK/Xkeeper - assembly/prog help
-loginsinex - initial understanding of levels thru editor
+
 pako - graphics help
+
 tetraly - discord support
+
+loginsinex - initial understanding of levels thru editor
 
 ### Gameplay
 
@@ -56,6 +59,11 @@ Level Stringer:
 
 - Does not patch levels completely so that they're all playable, and the method is rather simple
 - World 7 Level 2 will softlock, as it hasn't been patched for it!!!  Deselect it in the Level Select menu
+
+Boss Hunter
+
+- Must select levels labeled with 'openworld'
+- Not fully tested, but should be stable enough to complete at boss numbers up to 5
 
 Known things to fix:
 
