@@ -56,7 +56,9 @@ def randomize_rom(my_rom, my_mem_locs, values, game):
     
     all_levels = [i for sublist in game.worlds for i in sublist if i[0] or any(i)] # remove empty levels
     while len(all_levels) < my_k:
-        all_levels.append(copy.deepcopy(random.choice(all_levels)))
+        new_level = random.choice(all_levels)
+        print('HUWUHWH iM COPYING')
+        all_levels.append(copy.deepcopy(new_level))
     my_boss_rooms = [x for x in [i for sublist in all_levels for i in sublist] if x is not None and x.has_boss]
 
     if 'string' in event:
@@ -101,7 +103,8 @@ def randomize_rom(my_rom, my_mem_locs, values, game):
 
     if 'boss' in event:
         for room in my_boss_rooms:
-            room.flags['force_character'] = random.randint(0,3)
+            if "Force Character" in values['presetCharRule']:
+                room.flags['force_character'] = random.randint(0,3)
             room.flags['boss_health'] = random.randint(values['bossMin'], values['bossMax'])
             room.flags['convert_world'] = room.world
 
@@ -118,11 +121,54 @@ def randomize_rom(my_rom, my_mem_locs, values, game):
             my_choices = sorted(my_choices, key=lambda x: x[0].header['id'])
         rooms = [x for x in [item for sublist in my_choices for item in sublist] if x is not None]
         if values['betaShuffleRoom']:
-            rooms = random.choices(rooms, k=len(rooms))
+            random.shuffle(rooms)
+
         my_map, slots, edges_by_level = map_builder.map_maker(rooms, my_boss_rooms)
-        rooms_data = map_builder.map_stringer(slots, edges_by_level, my_mem_locs, boss_lock=values['betaLockedDoors'])
+        rooms_data = map_builder.map_stringer(slots, edges_by_level, boss_lock=values['betaLockedDoors'])
         print('\n'.join([str(row) for row in my_map]))
         write_rooms_to_rom(my_new_rom, rooms_data, my_mem_locs)
+
+        def format_cell(y):
+            if isinstance(y, str): return ''
+            output = []
+            if y.is_jar or y.has_boss: output.append('special')
+            if y.flags['my_slot'] == 0: output.append('start')
+            output.append('world{}'.format(y.world%7))
+            return ' '.join(output)
+
+        def text_cell(y):
+            if isinstance(y, str): return y
+            if y.is_jar: return 'J'
+            if y.has_boss: return 'B'
+            return y.flags['my_slot']
+
+        def title_cell(y):
+            if isinstance(y, str): return 'EMPTY'
+            my_dict = {x:y for x,y in {**y.header, **y.flags}.items() if x in ['world', 'mush1', 'mush2', 'pages']}
+            my_dict['doors'] = [x for x in y.flags['doors']]
+            return '\n'.join(([str((x, y)) for x,y in my_dict.items()]))
+
+        me_table = '''<head>\
+            <style>\
+            .start {font-style: bold;}\
+            .world0 {background-color:#88E299}\
+            .world1 {background-color:#FFE299}\
+            .world2 {background-color:#E29292}\
+            .world3 {background-color:#BFD6EE}\
+            .world4 {background-color:#D6EE}\
+            .world5 {background-color:#6EE}\
+            .world6 {background-color:#e022}\
+            .special {font-style: italic;}\
+            </style>\
+        </head><html><table>'''
+        me_rows = []
+        for y in my_map:
+            row = '<tr>{}<tr>'
+            my_col = ''.join(['<td title="{}" class="{}">{}</td>\n'.format(title_cell(x), format_cell(x), text_cell(x)) for x in y])
+            me_rows.append(row.format(my_col))
+        me_table = me_table + ''.join(me_rows) + '</table></html>'
+        with open('spoiler.html', 'w') as f:
+            f.write(me_table)
 
     # print('Winning Level ID', my_new_rom[my_mem_locs['WinLevel']])
     print('TransitionSTart', my_new_rom[my_mem_locs['StartingTransition'] + 1])
@@ -322,6 +368,12 @@ def write_rooms_to_rom(my_rom, room_datas, my_mem_locs):
         for block in extra_byte_blocks:
             my_data += block
         my_data += [0xff, 0xff]
+
+        if len(new_bank) + len(my_data) >= BANK_SIZE:
+            print('Next_Bank:', bnk_num)
+            my_rom[bnk_num*BANK_SIZE: bnk_num*BANK_SIZE + len(new_bank)] = new_bank
+            bnk_num += 1
+            new_bank = []
 
         my_ptr_loc = 0x8000 + len(new_bank)
 

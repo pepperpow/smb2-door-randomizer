@@ -1,4 +1,4 @@
-import random, copy
+import random
 from re import I
 from types import SimpleNamespace
 
@@ -32,6 +32,7 @@ def map_maker(rooms, bosses):
 
     for room_cnt, room in enumerate(rooms + bosses):
         slots[room_cnt] = room
+        room.flags['my_slot'] = room_cnt
         # if level is Not Valid
         pages = room.header['pages']
         # invert outside of level_order functions
@@ -85,14 +86,15 @@ def map_maker(rooms, bosses):
                 if not solid_success: 
                     print('no solid...')
                     continue
+                room.flags['coordinates'] = adjusted_coords
                 for page, n_pos in enumerate(adjusted_coords):
-                    key = str(room_cnt % 10)
-                    if room.is_jar > 0: key = 'J'
-                    for c in [x for x in commands if x.page == page]:
-                        if any([chr(x) in c.tiles for x in [TileName.SubspaceMushroom1, TileName.SubspaceMushroom2]]):
-                            key = 'M'; break
-                    if room.has_boss: key = 'B'
-                    my_map[n_pos[0]][n_pos[1]] = key
+                    # key = str(room_cnt % 10)
+                    # if room.is_jar > 0: key = 'J'
+                    # for c in [x for x in commands if x.page == page]:
+                    #     if any([chr(x) in c.tiles for x in [TileName.SubspaceMushroom1, TileName.SubspaceMushroom2]]):
+                    #         key = 'M'; break
+                    # if room.has_boss: key = 'B'
+                    my_map[n_pos[0]][n_pos[1]] = room
                     occupied[tuple(n_pos)] = (room_cnt, page)
                 # label our new candidate positions
                 for page, n_pos in enumerate(adjusted_coords):
@@ -164,7 +166,7 @@ def map_maker(rooms, bosses):
     return my_map, slots, edges_by_level
 
 
-def map_stringer(slots, edges_by_level, my_mem_locs, boss_lock=False):
+def map_stringer(slots, edges_by_level, boss_lock=False):
     levels_data = []
     # normal, dark, light, dark solid, locked, jar
     door_defs = [[chr(TileName.DoorTop), chr(TileName.DoorBottom)],
@@ -193,7 +195,6 @@ def map_stringer(slots, edges_by_level, my_mem_locs, boss_lock=False):
                 my_room_map = [x + [TileName.Sky]*(10-my_pages)*16 for x in my_room_map]
         room.data = [item for sublist in my_room_map for item in sublist]
 
-        my_enemies = room.enemies
         commands = [x for x in token.tokenize(room.data, not room.vertical, True)]
         
         door_data = []
@@ -204,7 +205,8 @@ def map_stringer(slots, edges_by_level, my_mem_locs, boss_lock=False):
                 this_room, this_page = my_edge
                 sub_room = slots[this_room]
                 if room.has_boss:
-                    door_data.append(( this_room//10, this_page + ((this_room%10)<<4) ))
+                    for p in range(room.header['pages'] + 1):
+                        door_data.append(( this_room//10, this_page + ((this_room%10)<<4) ))
                     continue
                 elif sub_room.has_boss:
                     this_page = 0
@@ -216,13 +218,13 @@ def map_stringer(slots, edges_by_level, my_mem_locs, boss_lock=False):
                         door_type.append(5)
                     elif room.is_jar:
                         door_type.append(-1)
-                    elif sub_music == my_music == 0:
+                    elif sub_music == my_music == 0: # outside
                         door_type.append(0)
-                    elif sub_music == my_music:
-                        door_type.append(1)
-                    elif 0 == sub_music < my_music:
+                    elif sub_music == my_music: # inside
+                        door_type.append(0)
+                    elif 0 == sub_music < my_music: # inside to outside
                         door_type.append(2)
-                    elif sub_music > my_music == 0:
+                    elif sub_music > my_music == 0: # outside to inside
                         door_type.append(1)
                     else:
                        door_type.append(0)
@@ -231,19 +233,6 @@ def map_stringer(slots, edges_by_level, my_mem_locs, boss_lock=False):
                 door_data.append(None)
                 door_type.append(None)
 
-        my_world = room.world
-        new_world = room.flags['convert_world'] if my_world < 6 and not room.has_boss else my_world
-        new_world = room.flags['convert_world'] if EnemyName.Pidgit not in [e['type'] for e in my_enemies] else my_world
-        room.header['unk3'] = new_world
-        my_enemies = [[e['type'], e['x'], e['y'], e['page']] for e in my_enemies]
-
-        if my_world != new_world:
-            if room.header['pala'] == 1 and new_world in [3]: # snow doesn't use dark, but we can fix that later
-                room.header['pala'] = 0
-            for c in commands:
-                c.tiles = ''.join([chr(convertMyTile(ord(t), my_world, new_world)) for t in c.tiles])
-            
-            my_enemies = [convertMyEnemy(e, my_world, new_world) for e in my_enemies]
 
         for c in commands:
             for ch in [chr(x) for x in [TileName.DarkDoor, TileName.LightDoor, TileName.DoorBottom, TileName.DoorTop, TileName.DoorwayTop, TileName.DoorBottomLock]]:
@@ -259,14 +248,19 @@ def map_stringer(slots, edges_by_level, my_mem_locs, boss_lock=False):
                 if ch in c.tiles:
                     c.tiles = c.tiles.replace(ch, chr(TileName.GrassPotion))
 
-        my_enemies = [e if e[0] != EnemyName.CrystalBall else (EnemyName.Key, *e[1:]) for e in my_enemies if e[0] not in [EnemyName.HawkmouthBoss, EnemyName.HawkmouthLeft, EnemyName.HawkmouthRight]]
 
-
+        room.flags['doors'] = [n for n, x in enumerate(door_data) if x]
         for cnt, d in enumerate(door_data):
             if room.has_boss or room.is_jar: break
             if d is None: continue
             else:
-                my_top_tile = TileName.BridgeShadow if door_type[cnt] != 5 else TileName.Sky
+                # if cnt not in edges_by_level
+                my_coord_height = room.flags['coordinates'][cnt][0]
+                s_n, s_p = edges_by_level[(room_cnt, cnt)]
+                sub_coord = slots[s_n].flags['coordinates'][s_p][0]
+                my_top_tile = TileName.LightTrailRight if my_coord_height < sub_coord else TileName.LightTrailLeft
+                my_top_tile = TileName.LightTrail if my_coord_height == sub_coord else my_top_tile
+                my_top_tile = TileName.Phanto if door_type[cnt] == 4 else my_top_tile
                 p = find_sturdy_surface(cnt, my_room_map, room.vertical)
                 if p is None:
                     print('FLINCH')
@@ -277,45 +271,55 @@ def map_stringer(slots, edges_by_level, my_mem_locs, boss_lock=False):
                     # uh oh... this is a bad condition
                 else:
                     my_door_tiles = [chr(my_top_tile)] + door_defs[door_type[cnt]]
-                if door_type[cnt] == 4:
-                    my_enemies.append((EnemyName.Phanto, p[0], (p[1]), cnt))
+                # room.enemies.append({'type': EnemyName.Phanto, 'x': p[0], 'y': p[1], 'page': cnt})
                 print(room.vertical, cnt, p, d)
                 door_command = token.smb2command(0, cnt, p[0], (p[1] - 3), 'VLINEAR', ''.join(my_door_tiles), 0, 999)
                 commands.append(door_command)
 
-        if False: # lock boss doors
-            distance, max_dist = 0, random.randint(2,4)
-            current_room = room_name
-            def check_room_depth_key(my_id, meta, distance, max_dist, visited=None):
-                sub_info = metadata[my_id]
-                visited = set([my_id]) if visited is None else visited
-                my_nodes = []
-                if EnemyName.Key in [x[0] for x in sub_info['enemies']] or distance == max_dist:
-                    return [my_id]
-                for sub in sub_info['connections']:
-                    current_room = slots[sub]
-                    if current_room not in visited:
-                        visited.add(current_room)
-                        my_nodes.append(current_room)
-                        my_nodes.extend(check_room_depth_key(current_room, metadata, distance + 1, max_dist, visited))
-                        visited.discard(current_room)
-                return my_nodes
-            
-            my_nodes = check_room_depth_key(current_room, metadata, distance, max_dist)
-            my_nodes = [x for x in my_nodes if x != current_room]
-            if len(my_nodes) > 0:
-                sub_num = random.choice(my_nodes)
-                sub_info = metadata[sub_num]
-                if sub_info and EnemyName.Key not in [x[0] for x in sub_info['enemies']]:
-                    sub_data = sub_info['data']
-                    sub_map = np.array([(x) for x in sub_data]).reshape((150,16))
-                    my_page = random.choice(sub_info['sturdy_pages'])
-                    surface = find_sturdy_surface(my_page, sub_map)
-                    surface = (surface[0]%16, (surface[1]-1)%15)
-                    sub_info['enemies'].append(([EnemyName.Key, *surface, my_page]))
-                    sub_info['enemies'].append(([EnemyName.Phanto, surface[0], max(surface[1]-2, 2), my_page]))
-                    # print(sub_info['enemies'])
 
+        # if room.has_boss and boss_lock: # lock boss doors
+        #     distance, max_dist = 0, random.randint(2,4)
+
+        #     def check_room_depth_key(my_id, distance, max_dist, visited=None):
+        #         current_room = slots[my_id]
+        #         visited = set([my_id]) if visited is None else visited
+        #         my_nodes = []
+        #         if EnemyName.Key in [x['type'] for x in current_room.enemies] or distance == max_dist:
+        #             return [current_room]
+        #         for sub_id in current_room.flags['connections']:
+        #             if sub_id not in visited:
+        #                 visited.add(sub_id)
+        #                 my_nodes.append(slots[sub_id])
+        #                 my_nodes.extend(check_room_depth_key(room_cnt, distance + 1, max_dist, visited))
+        #                 visited.discard(sub_id)
+        #         return my_nodes
+            
+        #     my_nodes = check_room_depth_key(room_cnt, distance, max_dist)
+        #     # my_nodes = [x for x in my_nodes if x and x != current_room]
+        #     if len(my_nodes) > 0:
+        #         sub_room = random.choice(my_nodes)
+        #         if sub_room and EnemyName.Key not in [x['type'] for x in sub_room.enemies]:
+        #             # TODO: enemies are not persistent after being processed
+        #             # becomes a list of tuples instead of keeping the objects
+        #             my_page = random.choice(sub_room.flags['sturdy_pages'])
+        #             my_room_2d_array = rotate_me_room(sub_room, sub_room.vertical)
+        #             surface = find_sturdy_surface(my_page, my_room_2d_array, sub_room.vertical)
+        #             sub_room.enemies.append({'type': EnemyName.Key, 'x': surface[0], 'y': surface[1], 'page': my_page})
+        #             sub_room.enemies.append({'type': EnemyName.Phanto, 'x': surface[0], 'y': surface[1], 'page': my_page})
+
+        my_world = room.world
+        new_world = room.flags['convert_world'] if my_world < 6 and not room.has_boss else my_world
+        new_world = room.flags['convert_world'] if EnemyName.Pidgit not in [e['type'] for e in room.enemies] else my_world
+        room.header['unk3'] = new_world
+
+        room.enemies = [e if e['type'] != EnemyName.CrystalBall else {**e, 'type': EnemyName.Key} for e in room.enemies if e['type'] not in [EnemyName.HawkmouthBoss, EnemyName.HawkmouthLeft, EnemyName.HawkmouthRight]]
+
+        if my_world != new_world:
+            if room.header['pala'] == 1 and new_world in [3]: # snow doesn't use dark, but we can fix that later
+                room.header['pala'] = 0
+            for c in commands:
+                c.tiles = ''.join([chr(convertMyTile(ord(t), my_world, new_world)) for t in c.tiles])
+            
         my_header_bytes = smb2.write_header_bytes(room.header)
         my_level_data = [my_header_bytes + segment for segment in token.commands_to_level(commands, door_data, room.header['pages'])]
 
@@ -323,11 +327,26 @@ def map_stringer(slots, edges_by_level, my_mem_locs, boss_lock=False):
             room.is_jar = 2
 
         levels_data.append(
-            SimpleNamespace(**{
+            {
                 "world": new_world,
                 "data": my_level_data,
-                "enemies": my_enemies,
                 "info": room
+            })
+    
+    processed_data = []
+    for l in levels_data:
+        room = l['info']
+
+        my_enemies = [[e['type'], e['x'], e['y'], e['page']] for e in room.enemies]
+
+        if l['world'] != room.world:
+            my_enemies = [convertMyEnemy(e, my_world, new_world) for e in my_enemies]
+
+        processed_data.append(
+            SimpleNamespace(**{
+                **l,
+                'enemies': my_enemies
             }))
 
-    return levels_data
+
+    return processed_data
