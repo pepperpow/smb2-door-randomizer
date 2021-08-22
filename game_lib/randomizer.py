@@ -117,6 +117,8 @@ def randomize_rom(my_rom, my_mem_locs, values, game):
 
     if any(x in event for x in ['boss']):
         # pick level
+        my_new_rom[my_mem_locs['TransitionTypeAfterWin'] + 1] = 1
+
         if not values['betaShuffleLevel']:
             my_choices = sorted(my_choices, key=lambda x: x[0].header['id'])
         rooms = [x for x in [item for sublist in my_choices for item in sublist] if x is not None]
@@ -170,7 +172,7 @@ def randomize_rom(my_rom, my_mem_locs, values, game):
             .world4 {background-color:#D6EE}\
             .world5 {background-color:#6EE}\
             .world6 {background-color:#e022}\
-            .special {border: 2px dotted black;}\
+            .special {border: 4px dotted black;}\
             </style>\
         </head><html><table>'''
         me_rows = []
@@ -366,7 +368,7 @@ def write_rooms_to_rom(my_rom, room_datas, my_mem_locs):
         if my_room.info.is_jar != 1:
             my_function = (my_mem_locs['LoadWorldCHRBanks'] % 0x4000) + 0xc000
             my_func_ptr = [my_function >> 8, my_function % 256]
-            extra_byte_blocks.append(bytes([0xfc, 0x06, 0x34, 0x01, my_room.world] + [0xfa, *my_func_ptr]))
+            extra_byte_blocks.append(bytes([0xfc, 0x06, 0x34, 0x02, my_room.world, my_room.info.world] + [0xfa, *my_func_ptr]))
         if my_room.info.is_jar == 2:
             extra_byte_blocks.append(bytes([0xfc, 0x04, 0xee, 0x01, 0x02]))
         if 'boss_health' in my_room.info.flags:
