@@ -97,9 +97,35 @@ def query_tiles(room, x, y, page, length, vertical_command=False):
         return my_room_map[y][x:x+length]
 
 
+def convertMyEnemy(e, old_world, new_world):
+    og_enemies = enemiesInWorld[new_world]
+    new_enemies = convertEnemyFromOldTo[new_world]
+    new_enemies.update(convertEnemyTo[new_world])
+    if e[0] in new_enemies and not e[0] in og_enemies:
+        new_enemy_id = new_enemies[e[0]]
+        offset = enemyOffset.get(e[0], (0,0))
+        return (new_enemy_id, e[1]+offset[0], e[2]+offset[1], e[3])
+    return e
+
+
+def convertMyTile(t, old_world, new_world):
+    og_tiles = tilesInWorld[new_world]
+    new_tiles = convertTileFromOldTo[new_world]
+    new_tiles.update(convertTileTo[new_world])
+    if t in new_tiles and not t in og_tiles:
+        new_t = new_tiles[t]
+        return new_t
+        # if new_t not in tilesInWorld[old_world]:
+    return t
+
+
 convertFromIce = {
     TileName.FrozenRock: TileName.RockWall,
     TileName.JumpThroughIce: TileName.Bridge
+}
+
+convertIntoIce = {
+    **{y:x for x,y in convertFromIce.items()}
 }
 
 convertFromWhale = {
@@ -119,6 +145,8 @@ convertIntoSand = {
         TileName.LogPillarMiddle0: TileName.CactusMiddle,
         TileName.LogPillarTop1: TileName.CactusTop,
         TileName.LogPillarMiddle1: TileName.CactusMiddle,
+        TileName.JumpThroughBrick: TileName.JumpThroughSand,
+        TileName.JumpThroughBlock: TileName.JumpThroughSandBlock,
 }
 
 convertFromSand = {
@@ -126,8 +154,8 @@ convertFromSand = {
         TileName.CactusMiddle: TileName.LogPillarMiddle0,
         TileName.ColumnPillarTop2: TileName.LogPillarTop0,
         TileName.ColumnPillarMiddle2: TileName.LogPillarMiddle0,
-        TileName.JumpthroughSand: TileName.JumpthroughBrick,
-        TileName.JumpthroughSandBlock: TileName.JumpThroughBlock
+        TileName.JumpThroughSand: TileName.JumpThroughBrick,
+        TileName.JumpThroughSandBlock: TileName.JumpThroughBlock
 }
 
 convertFromWood = {
@@ -149,13 +177,49 @@ convertFromWart = {
     TileName.HornTopRight: TileName.JarSmall,
 }
 
-convertTile = {
-    0:{
+defaultConvert = {
+    'normal': {
         **convertFromIce,
         **convertFromSand,
-        **convertFromWart,
         **convertFromWhale,
         **convertFromWood,
+        **convertFromWart,
+    }, 
+    'sand': {
+        **convertFromIce,
+        **convertFromWhale,
+        **convertFromWood,
+        **convertFromWart,
+    },
+    'ice': {
+        **convertFromSand,
+        **convertFromWood,
+        **convertFromWart,
+    }
+}
+
+convertTileFromOldTo = {
+    0: defaultConvert['normal'],
+    1: defaultConvert['sand'],
+    2: defaultConvert['normal'],
+    3: defaultConvert['ice'],
+    4: defaultConvert['normal'],
+    5: {
+        **convertFromIce,
+        **convertFromWart,
+        **convertFromWhale,
+    },
+    6: {
+        **convertFromIce,
+        **convertFromSand,
+        **convertFromWhale,
+        **convertFromWood,
+    },
+
+}
+
+convertTileTo = {
+    0:{
         TileName.CactusTop: TileName.LogPillarTop0,
         TileName.CactusMiddle: TileName.LogPillarMiddle0,
         TileName.ColumnPillarTop2: TileName.LogPillarTop0,
@@ -163,19 +227,10 @@ convertTile = {
         TileName.GroundBrick2: TileName.RockWall
     },
     1:{
-        **convertFromIce,
-        **convertFromWart,
-        **convertFromWhale,
-        **convertFromWood,
         **convertIntoSand,
         TileName.GroundBrick2: TileName.RockWall
     },
     2:{
-        **convertFromIce,
-        **convertFromSand,
-        **convertFromWart,
-        **convertFromWhale,
-        **convertFromWood,
         TileName.CactusTop: TileName.LogPillarTop0,
         TileName.CactusMiddle: TileName.LogPillarMiddle0,
         TileName.ColumnPillarTop2: TileName.LogPillarTop0,
@@ -183,12 +238,10 @@ convertTile = {
         TileName.GroundBrick2: TileName.RockWall
     },
     3:{
-        **convertFromSand,
-        **convertFromWart,
-        **convertFromWood,
-        TileName.LogLeft: TileName.SolidBrick0,
-        TileName.LogMiddle: TileName.SolidBrick1,
-        TileName.LogRight: TileName.SolidBrick2,
+        **convertIntoIce,
+        TileName.LogLeft: TileName.JumpThroughIce,
+        TileName.LogMiddle: TileName.JumpThroughIce,
+        TileName.LogRight: TileName.JumpThroughIce,
         TileName.CactusTop: TileName.LogPillarTop0,
         TileName.CactusMiddle: TileName.LogPillarMiddle0,
         TileName.ColumnPillarTop2: TileName.LogPillarTop0,
@@ -196,26 +249,14 @@ convertTile = {
         TileName.GroundBrick2: TileName.FrozenRock
     },
     4:{
-        **convertFromIce,
-        **convertFromSand,
-        **convertFromWart,
-        **convertFromWood,
-        **convertFromWhale,
         TileName.GroundBrick2: TileName.RockWall
     },
     5:{
-        **convertFromIce,
         **convertIntoSand,
-        **convertFromWart,
-        **convertFromWhale,
         TileName.GroundBrick2: TileName.RockWall
     },
     6:
     {
-        **convertFromIce,
-        **convertFromSand,
-        **convertFromWhale,
-        **convertFromWood,
         TileName.FrozenRock: TileName.SolidBrick0,
         TileName.JumpThroughIce: TileName.ConveyorLeft,
         TileName.GreenPlatformTopLeft: TileName.MushroomTopLeft,
@@ -250,7 +291,7 @@ convertTile = {
 }
 
 tilesInWorld = {
-    x: y.values() for x,y in convertTile.items()
+    x: [t for t in y.values()] for x,y in convertTileTo.items()
 }
 
 enemyOffset = {
@@ -274,21 +315,7 @@ enemiesLandConvert = {
     EnemyName.Ostro: EnemyName.NinjiRunning
 }
 
-def convertMyEnemy(e, old_world, new_world):
-    if e[0] in convertEnemy[new_world]:
-        new_enemy_id = convertEnemy[new_world][e[0]]
-        offset = enemyOffset.get(e[0], (0,0))
-        return (new_enemy_id, e[1]+offset[0], e[2]+offset[1], e[3])
-    return e
-
-def convertMyTile(t, old_world, new_world):
-    if t in convertTile[new_world]:
-        new_t = convertTile[new_world][t]
-        return new_t
-        # if new_t not in tilesInWorld[old_world]:
-    return t
-
-convertEnemy = {
+convertEnemyFromOldTo = {
     0:{
         **enemiesIceConvert,
         **enemiesSandConvert,
@@ -303,9 +330,6 @@ convertEnemy = {
     },
     3:{
         **enemiesLandConvert,
-        EnemyName.Pokey: EnemyName.Trouter,
-        EnemyName.CobratJar: EnemyName.WhaleSpout,
-        EnemyName.CobratSand: EnemyName.WhaleSpout
     },
     4:{
         **enemiesIceConvert,
@@ -322,8 +346,21 @@ convertEnemy = {
     }
 }
 
+convertEnemyTo = {
+    0: {},
+    1: {},
+    2: {},
+    3: {
+        EnemyName.CobratJar: EnemyName.WhaleSpout,
+        EnemyName.CobratSand: EnemyName.WhaleSpout
+    },
+    4: {},
+    5: {},
+    6: {},
+}
+
 enemiesInWorld = {
-    x: y.values() for x,y in convertEnemy.items()
+    x: [e for e in y.values()] for x,y in convertEnemyTo.items()
 }
 
 # i just ripped this from the game should probably use enums

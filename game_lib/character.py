@@ -222,6 +222,10 @@ def image_to_character(image_file):
     profile['profile_image'] = base64.b64encode(buffered.getvalue())
     return profile
 
+# internal order, mario peach toad luigi (imajin lina papa mama)
+# select screen order (0 3 2 1) (not important)
+# orderA = mario luigi peach toad (sprite framedata order)
+# orderB = mario toad luigi peach (internal sheet graphics order, pal)
 CHAR_ORDER, CHAR_ORDER_SELECT = [0, 3, 1, 2], [0, 1, 3, 2]
 SHEET_NUMS = [0, 0x3c, 4, 0x80]
 EYEFRAME_NUM = 0x3E
@@ -241,7 +245,7 @@ def apply_characters_to_rom(my_rom, list_of_char, my_mem_locs):
             continue
         mem_loc =  0x40000 # hardcoded to expanded PRG/CHR
         poof_tiles = my_rom[mem_loc+0x340:mem_loc+0x3C0]
-        char_num = CHAR_ORDER_SELECT[char_num]
+        old_num, char_num = char_num, CHAR_ORDER_SELECT[char_num]
 
         for s in range(4):
             data = my_profile['sheet_data'][s]
@@ -254,7 +258,6 @@ def apply_characters_to_rom(my_rom, list_of_char, my_mem_locs):
             my_rom[mem_loc] = EYEFRAME_NUM
 
         char_num_a = CHAR_ORDER[char_num]
-        char_num_b = CHAR_ORDER_SELECT[char_num]
 
         lar = 'Character{}_Frames'.format(['One', 'Two', 'Tre', 'Four'][char_num_a])
         mem_loc_frames = [my_mem_locs[lar], my_mem_locs[lar+'Small']]
@@ -295,8 +298,8 @@ def apply_characters_to_rom(my_rom, list_of_char, my_mem_locs):
         mem_loc = my_mem_locs['DokiMode'] + char_num_a
         my_rom[mem_loc] = 0
         for x in CHAR_FLAGS:
-            if my_profile.get(x):
-                my_rom[mem_loc] |= CHAR_FLAGS[x]
+            if my_profile.get(x, False):
+                my_rom[mem_loc] = my_rom[mem_loc] | CHAR_FLAGS[x]
         
         mem_loc = my_mem_locs['CarryYOffsetBigLo'] + char_num_a
         my_rom[mem_loc] = my_profile['carry'][0]
@@ -308,7 +311,7 @@ def apply_characters_to_rom(my_rom, list_of_char, my_mem_locs):
         p = [0xf] + my_profile['palette'][1:]
         my_rom[mem_loc:mem_loc+4] = bytes(p)
             
-        mem_loc = my_mem_locs['PlayerSelectSpritePalettes_Mario'] + char_num_b*7 + 3
+        mem_loc = my_mem_locs['PlayerSelectSpritePalettes_Mario'] + old_num*7 + 3
         my_rom[mem_loc:mem_loc+4] = bytes(p)
         
         mem_loc = my_mem_locs['CharacterYOffsetCrouch'] + char_num_a

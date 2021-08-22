@@ -342,13 +342,13 @@ class TileName(IntEnum):
     HornBottomLeft = 0x8E
     HornBottomRight = 0x8F
     BackgroundBrick = 0x90
-    JumpthroughSand = 0x91
-    JumpthroughWoodBlock = 0x92
+    JumpThroughSand = 0x91
+    JumpThroughWoodBlock = 0x92
     DiggableSand = 0x93
     LadderStandable = 0x94
     LadderStandableShadow = 0x95
-    JumpthroughSandBlock = 0x96
-    JumpthroughBrick = 0x97
+    JumpThroughSandBlock = 0x96
+    JumpThroughBrick = 0x97
     NothingBlock = 0x98
     SolidSand = 0x99
     NothingBlock2 = 0x9A

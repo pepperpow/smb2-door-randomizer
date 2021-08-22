@@ -22,7 +22,7 @@ def randomize_rom(my_rom, my_mem_locs, values, game):
     event, metadata = values['event'], values['meta']
 
     # Rom Setup part 1
-    # TODO: yeah part 1 and 2 could be reduced to a few lines with proper keys
+    # TODO: yeah part 1 and 2 could be reduced
     random.seed(current_seed)
 
     my_k = values['levelAmount'] if 'Generate' in event else metadata.get('k', 12)
@@ -88,7 +88,7 @@ def randomize_rom(my_rom, my_mem_locs, values, game):
             if "Force Character" in values['presetCharRule']:
                 room.flags['force_character'] = char_world if values['charPer'] == 'level' else random.randint(0,3)
 
-            if room.has_boss or any([e['name'] in [smb2.EnemyName.Birdo, smb2.EnemyName.HawkmouthBoss] for e in room.enemies]):
+            if room.has_boss or any([e['type'] in [smb2.EnemyName.Birdo, smb2.EnemyName.HawkmouthBoss] for e in room.enemies]):
                 room.flags['boss_health'] = random.randint(values['bossMin'], values['bossMax'])
 
             if values['presetInvert'] and not room.has_boss:
@@ -125,32 +125,44 @@ def randomize_rom(my_rom, my_mem_locs, values, game):
 
         my_map, slots, edges_by_level = map_builder.map_maker(rooms, my_boss_rooms)
         rooms_data = map_builder.map_stringer(slots, edges_by_level, boss_lock=values['betaLockedDoors'])
-        print('\n'.join([str(row) for row in my_map]))
         write_rooms_to_rom(my_new_rom, rooms_data, my_mem_locs)
 
         def format_cell(y):
             if isinstance(y, str): return ''
             output = []
-            if y.is_jar or y.has_boss: output.append('special')
+            spot, y = y
+            # if y.is_jar or y.has_boss: output.append('special')
             if y.flags['my_slot'] == 0: output.append('start')
             output.append('world{}'.format(y.world%7))
+            my_doors = [x for x in y.flags['doors']]
+            my_num = y.flags['coordinates'].index(spot)
+            if my_num in my_doors:
+                output.append('special')
             return ' '.join(output)
 
         def text_cell(y):
             if isinstance(y, str): return y
+            spot, y = y
+            if y.flags['my_slot'] == 0: return 'S'
             if y.is_jar: return 'J'
             if y.has_boss: return 'B'
+            my_num = y.flags['coordinates'].index(spot)
+            for i in ['mush_1', 'mush_2']:
+                if my_num == y.header.get(i):
+                    return 'M,{}'.format(y.flags['my_slot'])
             return y.flags['my_slot']
 
         def title_cell(y):
             if isinstance(y, str): return 'EMPTY'
+            spot, y = y
             my_dict = {x:y for x,y in {**y.header, **y.flags}.items() if x in ['world', 'mush1', 'mush2', 'pages']}
             my_dict['doors'] = [x for x in y.flags['doors']]
             return '\n'.join(([str((x, y)) for x,y in my_dict.items()]))
 
         me_table = '''<head>\
             <style>\
-            .start {font-style: bold;}\
+            td {width: 32px; height: 32px}
+            .start {font-size: 30;}\
             .world0 {background-color:#88E299}\
             .world1 {background-color:#FFE299}\
             .world2 {background-color:#E29292}\
@@ -158,13 +170,17 @@ def randomize_rom(my_rom, my_mem_locs, values, game):
             .world4 {background-color:#D6EE}\
             .world5 {background-color:#6EE}\
             .world6 {background-color:#e022}\
-            .special {font-style: italic;}\
+            .special {border: 2px dotted black;}\
             </style>\
         </head><html><table>'''
         me_rows = []
-        for y in my_map:
-            row = '<tr>{}<tr>'
-            my_col = ''.join(['<td title="{}" class="{}">{}</td>\n'.format(title_cell(x), format_cell(x), text_cell(x)) for x in y])
+        row = '<tr>{}<tr>'
+        me_rows.append(row.format(''.join([
+            "<td>{}</td>".format(x) for x in ['x'] + list(range(len(my_map[0])))
+        ])))
+        for num, y in enumerate(my_map):
+            my_col = '<td>{}</td>'.format(str(num))
+            my_col += ''.join(['<td title="{}" class="{}">{}</td>\n'.format(title_cell(x), format_cell(x), text_cell(x)) for x in y])
             me_rows.append(row.format(my_col))
         me_table = me_table + ''.join(me_rows) + '</table></html>'
         with open('spoiler.html', 'w') as f:

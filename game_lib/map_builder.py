@@ -94,7 +94,7 @@ def map_maker(rooms, bosses):
                     #     if any([chr(x) in c.tiles for x in [TileName.SubspaceMushroom1, TileName.SubspaceMushroom2]]):
                     #         key = 'M'; break
                     # if room.has_boss: key = 'B'
-                    my_map[n_pos[0]][n_pos[1]] = room
+                    my_map[n_pos[0]][n_pos[1]] = (n_pos, room)
                     occupied[tuple(n_pos)] = (room_cnt, page)
                 # label our new candidate positions
                 for page, n_pos in enumerate(adjusted_coords):
@@ -172,7 +172,7 @@ def map_stringer(slots, edges_by_level, boss_lock=False):
     door_defs = [[chr(TileName.DoorTop), chr(TileName.DoorBottom)],
                     [chr(TileName.DarkDoor)]*2,
                     [chr(TileName.LightDoor)]*2,
-                    [chr(TileName.DarkDoor), chr(TileName.DarkDoor), chr(TileName.JumpthroughBrick)],
+                    [chr(TileName.DarkDoor), chr(TileName.DarkDoor), chr(TileName.JumpThroughBrick)],
                     [chr(TileName.DoorTop), chr(TileName.DoorBottomLock) if boss_lock else chr(TileName.DoorBottom)],
                     [chr(TileName.JarTopPointer), chr(TileName.JarBottom)],
                     ]

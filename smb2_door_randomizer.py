@@ -9,6 +9,7 @@ valid_seed_chrs = [str(x) for x in range(10)] + [chr(x) for x in range(65,65+26)
 
 version = 0.45
 class Application():
+    """Base Application"""
     def __init__(self, filename) -> None:
         self.state = {
             'load_fail': 0,
@@ -23,11 +24,9 @@ class Application():
 
         self.header, self.rom = None, None 
 
-        self.characters_loaded = [None]*4
-        self.characters_locked = [False]*4
-
         self.current_seed = ''.join(random.choices(valid_seed_chrs, k=10))
         
+        # setup sets of levels by name
         self.level_sets = {}
         for game in glob.glob(os.path.join('my_levels', '*')):
             game_name = os.path.basename(game)
@@ -39,6 +38,7 @@ class Application():
             })
         self.active_levels = {x:self.level_sets[x] for x in self.level_sets if 'basegame' in x}
 
+        # set up characters
         self.characters = []
         for char_set in glob.glob(os.path.join('my_characters', '*')):
             my_char_sets = glob.glob(os.path.join(char_set, '*'))
@@ -46,6 +46,7 @@ class Application():
                 self.characters.append(char)
         self.active_chars = [x for x in self.characters if 'base' in x]
 
+        # load
         if os.path.isfile(filename):
             self.load_my_rom(filename, True)
 
