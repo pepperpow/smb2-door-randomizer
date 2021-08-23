@@ -335,13 +335,14 @@ def apply_characters_to_rom(my_rom, list_of_char, my_mem_locs):
         mem_loc = 48 * 0x400 + 0x40000 + 0x200 * cnt
         my_rom[mem_loc:mem_loc+0x200] = [item for sublist in bonus_stuff[cnt] for item in sublist]
 
+# ec38 ending
 def write_names(my_rom, char_num, name, my_mem_locs):
     char_num_a = CHAR_ORDER[char_num]
 
     mem_loc = my_mem_locs['TEXT_Mario'] + 4 + 13*char_num_a
     my_rom[mem_loc:mem_loc+8] = list([ord(x) + 0x99 for x in name.upper()]+[0xfb]*8)[:8]
 
-    mem_loc = my_mem_locs['EndingCelebrationText_MARIO'] + 4 + 13*char_num_a
+    mem_loc = my_mem_locs['EndingCelebrationText_MARIO'] + 3 + 12*char_num_a
     my_rom[mem_loc:mem_loc+8] = list([ord(x) + 0x99 for x in name.upper()]+[0xfb]*8)[:8]
 
 def paste_character_image(data, overlay):
