@@ -6,7 +6,9 @@ The Super Mario Bros 2 Door Randomizer (SMB2DR for short) is a randomizer for Su
 
 ### Releases
 
-While currently under development, releases will be placed at https://github.com/pepperpow/smb2-door-randomizer/tags
+While currently under development, releases will be placed at https://github.com/pepperpow/smb2-door-randomizer/releases
+
+ASM is located at https://github.com/pepperpow/smb2
 
 ### Thanks to
 
@@ -40,6 +42,7 @@ As for features:
 Changes to gameplay:
 
 - POW Blocks can be hit from beneath
+- Certain random characters can do special abilities...
 - Mushroom Blocks lifted from below while as a tile
 - Continue from last door on lives lost
 - Character select on death
@@ -58,7 +61,7 @@ This current version is a pared down completion of an original Door Randomizer. 
 Level Stringer:
 
 - Does not patch levels completely so that they're all playable, and the method is rather simple
-- World 7 Level 2 will softlock, as it hasn't been patched for it!!!  Deselect it in the Level Select menu
+- World 7 will softlock, as it hasn't been patched for it!!!  Deselect it in the Level Select menu
 
 Boss Hunter
 

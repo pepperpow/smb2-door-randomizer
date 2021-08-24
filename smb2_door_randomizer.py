@@ -8,6 +8,8 @@ import ui_define
 valid_seed_chrs = [str(x) for x in range(10)] + [chr(x) for x in range(65,65+26)]
 
 version = 0.45
+
+default_chars = ('Mario', 'Luigi', 'Toad', 'Peach')
 class Application():
     """Base Application"""
     def __init__(self, filename) -> None:
@@ -17,7 +19,8 @@ class Application():
             'my_header': None,
             'my_rom': None,
             'my_mem_locs': None,
-            'thread_state': 0
+            'thread_state': 0,
+            'selected_chars': list(default_chars)
         }
 
         self.queue = []
@@ -39,12 +42,17 @@ class Application():
         self.active_levels = {x:self.level_sets[x] for x in self.level_sets if 'basegame' in x}
 
         # set up characters
-        self.characters = []
+        self.characters = {}
         for char_set in glob.glob(os.path.join('my_characters', '*')):
-            my_char_sets = glob.glob(os.path.join(char_set, '*'))
+            my_char_sets = glob.glob(os.path.join(char_set, '*.png'))
             for char in my_char_sets:
-                self.characters.append(char)
-        self.active_chars = [x for x in self.characters if 'base' in x]
+                char_base, char_name = os.path.split(char)
+                char_name = char_name.split('.')[0].split(',')[0][:12]
+                char_base = os.path.basename(char_base)
+                if char_base != 'base':
+                    char_name = '{} : {}'.format(char_name, char_base)
+                self.characters[char_name.capitalize()] = char
+        self.active_chars = [x for x in self.characters.keys() if ':' not in x]
 
         # load
         if os.path.isfile(filename):
@@ -155,13 +163,23 @@ class Application():
             return True
         
         if 'Character Select' in event:
+            my_chars_all = ['?'] + [ x for x in self.characters.keys() ]
+
             select_layout = [
-            [sg.Text('Select Characters to randomize into selection')],
-            [sg.Text('Drag or Ctrl+Click to select multi')],
-            [sg.Listbox(self.characters, key='character_list',\
-                select_mode=sg.LISTBOX_SELECT_MODE_EXTENDED, size=(40, 10), auto_size_text=True,\
-                default_values=self.active_chars)],
-            [sg.OK(), sg.Cancel()]]
+            [sg.Text('Select Characters to each Slot')],
+            [sg.Text('Slot 1'),
+                sg.Combo(my_chars_all, key='player1', readonly=True,\
+                default_value=self.state['selected_chars'][0])],
+            [sg.Text('Slot 2'),
+            sg.Combo(my_chars_all, key='player2', readonly=True,\
+                default_value=self.state['selected_chars'][1])],
+            [sg.Text('Slot 3'),
+            sg.Combo(my_chars_all, key='player3', readonly=True,\
+                default_value=self.state['selected_chars'][2])],
+            [sg.Text('Slot 4'),
+            sg.Combo(my_chars_all, key='player4', readonly=True,\
+                default_value=self.state['selected_chars'][3])],
+            [sg.OK(), sg.Cancel(), sg.Button('Random Pool')]]
 
             # Create the Window
             window = sg.Window('Character Select', select_layout)
@@ -169,9 +187,35 @@ class Application():
             while True:             
                 event, values = window.read()
                 if event in (sg.WIN_CLOSED, 'Cancel'): break
-                if event in ('OK'):
-                    self.active_chars = window['character_list'].get()
-                    print('\n'.join(self.active_chars))
+                elif event in ('Random Pool'):
+                    while True:
+                        select_layout_random = [
+                        [sg.Text('Select Characters to randomize into selection')],
+                        [sg.Text('Drag or Ctrl+Click to select multi')],
+                        [sg.Listbox(my_chars_all[1:], key='character_list',\
+                            select_mode=sg.LISTBOX_SELECT_MODE_EXTENDED, size=(40, 10), auto_size_text=True,\
+                            default_values=self.active_chars)],
+                        [sg.OK(), sg.Cancel()]]
+
+                        window_inner = sg.Window('Character Select', select_layout_random)
+                        event, values = window_inner.read()
+                        if event in (sg.WIN_CLOSED, 'Cancel'): break
+                        if event in ('OK'):
+                            self.active_chars = window_inner['character_list'].get()
+                            print('\n'.join(self.active_chars))
+                            for n in range(4):
+                                window['player{}'.format(n+1)].update('?')
+                            window_inner.close()
+                            break
+                elif event in ('OK'):
+                    for n in range(4):
+                        self.state['selected_chars'][n] = window['player{}'.format(n+1)].get()
+                    print(self.state['selected_chars'])
+                    self.window['presetRandomCharacters'].update('Custom Characters')
+                    if tuple(self.state['selected_chars']) == default_chars:
+                        self.window['presetRandomCharacters'].update('Default Characters')
+                    if tuple(self.state['selected_chars']) == tuple(['?']*4):
+                        self.window['presetRandomCharacters'].update('Randomized Characters')
                     break
 
             window.close()
@@ -286,9 +330,20 @@ class Application():
                     else:
                         game = randomizer.smb2.LevelStorage(sorted(self.active_levels.values()))
 
+
+                    values['presetRandomCharacters'] = 'Randomized' in self.window['presetRandomCharacters'].get()
                     my_new_rom = randomizer.randomize_rom(self.state['my_rom'], self.state['my_mem_locs'], values, game); 
 
-                    randomizer.randomize_characters(my_new_rom, values, self.active_chars, self.state['my_mem_locs'])
+                    my_actives = [x for x in self.active_chars if x not in self.state['selected_chars']]
+                    if len(my_actives) == 0:
+                        my_actives = ['Mario', 'Luigi', 'Toad', 'Peach']
+                    elif len(my_actives) < 4:
+                        my_actives = my_actives*4
+                    randoms = random.sample(my_actives, k=4)
+
+                    my_selects = [a if b == '?' else b for a, b in zip(randoms, self.state['selected_chars'])]
+
+                    randomizer.randomize_characters(my_new_rom, values, my_selects, {x:y for x,y in self.characters.items() if x in my_selects + my_actives}, self.state['my_mem_locs'])
 
                     randomizer.randomize_text(my_new_rom, values, self.state['my_mem_locs'])
 

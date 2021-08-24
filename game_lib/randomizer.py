@@ -211,17 +211,17 @@ RANDOM_NAMES_EXTRA = [
     'ISLE', 'IWOL', 'YOINK', 'ROBERT', 'DOINK'
 ]
 
-def randomize_characters(my_rom, values, active_chars, mem_locs):
-    if values['presetRandomCharacters']:
-        char_list = active_chars
-        if len(char_list) > 0:
-            if len(char_list) < 4:
-                char_list = char_list * 4
-            char_loaded = [character.load_character_file(x) for x in random.sample(char_list, k=4)] 
-            character.apply_characters_to_rom(my_rom, char_loaded, mem_locs)
+default_chars = ('Mario', 'Luigi', 'Toad', 'Peach')
+
+def randomize_characters(my_rom, values, active_chars, all_chars, mem_locs):
+    char_list = active_chars
+
+    if tuple(char_list) != default_chars:
+        char_loaded = [character.load_character_file(all_chars[x]) for x in char_list] 
+        character.apply_characters_to_rom(my_rom, char_loaded, mem_locs)
 
     if values['presetRandomNames']:
-        random_names = [x for x in active_chars]
+        random_names = [x for x, y in all_chars.items()]
         random_names = [character.os.path.basename(x).split('.')[0].split(',')[0] for x in random_names]
         random_names = random.choices(random_names + RANDOM_NAMES_EXTRA, k=4)
         for n, x in enumerate(random_names):
@@ -235,6 +235,10 @@ def randomize_characters(my_rom, values, active_chars, mem_locs):
     if values['presetRandomStats']:
         shuffle_stats(my_rom, mem_locs)
 
+verb = ['OPENED', 'ATE', 'KICKED', 'CLIMBED', 'JUMPED', 'CLOSED']
+verb2 = ['OPENING', 'EATING', 'KICKING', 'CLIMBING', 'JUMPING', 'CLOSING']
+noun = ['PIZZA', 'DOOR', 'ROOM', 'TACO', 'PANTS', 'SHOE', 'HOUSE', 'DREAM', 'CAVE', 'SPELL', 'SMELL', 'STAIR', 'WORLD', 'VOICE']
+feel = ['SURPRISE', 'DISGUST', 'BOREDOM', 'ELATION', 'SADNESS', 'ANGER', 'WONDER']
 
 def randomize_text(my_rom, values, mem_locs):
     # Custom Text
@@ -271,29 +275,42 @@ def randomize_text(my_rom, values, mem_locs):
     my_names = [my_rom[x:x+8] for x in [loc + 13*x for x in range(4)]]
     my_names = [''.join([smb2.reverseTbl.get(c, chr(c-0x99)) for c in x]).strip() for x in my_names]
     og_story = og_story.replace('MARIO', random.choice(my_names))
+    og_story = og_story.replace('...', '')
+    og_story = og_story.replace(' AFTER AWAKENING,', '.')
+    og_story = og_story.replace(',', ', ')
+    og_story = og_story.replace(' HE ', ' THEY ')
+    og_story = og_story.replace(' HIM ', ' THEM ')
+    og_story = og_story.replace(' HIS ', ' THEIR ')
+    for x in ['OPENED']:
+        og_story = og_story.replace(x, random.choice(verb))
+    for x in ['CLIMBING']:
+        og_story = og_story.replace(x, random.choice(verb2))
+    for x in ['DOOR', 'CAVE', 'STAIR', 'DREAM', 'HELP TO BE FREED', 'WORLD', 'SPELL']:
+        og_story = og_story.replace(x, random.choice(noun))
+    for x in ['SURPRISED']:
+        og_story = og_story.replace(x, random.choice(feel))
 
     import textwrap
     og_story = textwrap.fill(og_story, 20).split('\n')
+    og_story[-1] += '...'
     for x in range(14):
         loc = mem_locs['TitleStoryText_Line01']+20*x
-        if x > len(og_story):
+        if x >= len(og_story):
             my_rom[loc:loc+20] = [0xFB]*20
         else:
             my_rom[loc:loc+20] = ([smb2.tbl.get(x, 0xCF) for x in og_story[x]] + [0xFB]*20)[:20]
 
 
-
 def shuffle_pal(my_rom, my_mem_locs):
     for char_num in range(4):
         char_num_a = character.CHAR_ORDER[char_num]
-        char_num_b = character.CHAR_ORDER_SELECT[char_num]
         loc = my_mem_locs['MarioPalette'] + char_num_a*4
         p = my_rom[loc:loc+4]
         for n in range(4):
             if p[n]%0x10 not in [0x0, 0xD, 0xE, 0xF]:
                 p[n] = 0x10*(p[n]//0x10) + random.randint(0x1, 0xB)
-        for loc in [loc, my_mem_locs['PlayerSelectSpritePalettes_Mario'] + char_num_b*7 + 3]:
-            my_rom[loc:loc+4] = bytes(p)
+
+        character.write_palettes(my_rom, char_num, p, my_mem_locs)
 
 
 def shuffle_stats(my_rom, my_mem_locs):
@@ -396,7 +413,10 @@ def write_rooms_to_rom(my_rom, room_datas, my_mem_locs):
         my_ptr_loc = 0x8000 + len(new_bank)
 
         # Add Raw Level Data to ROM
-        new_bank.extend(bytearray(my_data))
+        try:
+            new_bank.extend(bytearray(my_data))
+        except ValueError as e:
+            raise ValueError('Level with id {} wrote a bad byte??'.format(my_room.info.header['id']))
 
         print('Bank {} Bytes'.format(bnk_num), len(new_bank), '/', BANK_SIZE)
 

@@ -65,25 +65,21 @@ def unpack_character(zip_file):
     return my_profile
 
 
-def remove_transparency(im):
-    # Seriously I Just WANT THE PALETTE TO EXCLUDE ALPHA..
-    return im.convert('P')
-
-
 def image_to_character(image_file):
     # this needs to be reworked a lot, too many lines
-    my_img = remove_transparency(Image.open(image_file))
+    my_img = Image.open(image_file).convert('P')
 
-    file_name = os.path.basename(image_file.split('.')[0])
+    file_name = os.path.basename(image_file.rsplit('.')[0])
     if ',' in file_name:
         cmds = [x for x in reversed(file_name.split(','))]
         my_name = cmds.pop()
-        long = any([x in cmds for x in ['wide', 'long']])
+        long = 'wide' in cmds or 'long' in cmds
     else:
         cmds = []
         my_name = file_name
         long = False
 
+    print(my_name)
     print('Character Commands:', cmds)
 
     all_tiles, et_tiles = [], {}
@@ -204,6 +200,7 @@ def image_to_character(image_file):
                 'carry': [256-12,256-4,14,6],
                 **{x:False for x in CHAR_FLAGS}
             }
+
     while len(cmds):
         cmd = cmds.pop().lower()
         if cmd in CHAR_FLAGS:
@@ -229,14 +226,18 @@ def image_to_character(image_file):
 CHAR_ORDER, CHAR_ORDER_SELECT = [0, 3, 1, 2], [0, 1, 3, 2]
 SHEET_NUMS = [0, 0x3c, 4, 0x80]
 EYEFRAME_NUM = 0x3E
-    
+
+VICTORY_SPRITES = 0x30
+VICTORY_MINI = 0x30
+
 CHAR_FLAGS = {
-    'wide': 0b1000000,
     'stand': 0b1,
     'flutter': 0b100,
     'pwalk': 0b1000,
     'bjump': 0b10000,
     'smb1': 0b100000,
+    'pound': 0b1000000,
+    'wide': 0b10000000,
     }
 
 def apply_characters_to_rom(my_rom, list_of_char, my_mem_locs):
@@ -244,11 +245,11 @@ def apply_characters_to_rom(my_rom, list_of_char, my_mem_locs):
         if not isinstance(my_profile, dict):
             continue
         mem_loc =  0x40000 # hardcoded to expanded PRG/CHR
-        poof_tiles = my_rom[mem_loc+0x340:mem_loc+0x3C0]
-        old_num, char_num = char_num, CHAR_ORDER_SELECT[char_num]
+        poof_tiles = my_rom[mem_loc+0x340:mem_loc+0x3C0] # grab poof tiles
+        old_num, char_num = char_num, CHAR_ORDER_SELECT[char_num] # id numbers
 
         for s in range(4):
-            data = my_profile['sheet_data'][s]
+            data = my_profile['sheet_data'][s] # get sheet data (large, small, bonus1, bonus2)
             mem_loc = SHEET_NUMS[s] * 0x400 + 0x40000 + 0x400 * char_num
             my_rom[mem_loc:mem_loc+0x400] = data
             my_rom[mem_loc+0x340:mem_loc+0x3C0] = poof_tiles
@@ -287,14 +288,6 @@ def apply_characters_to_rom(my_rom, list_of_char, my_mem_locs):
                 meta_item += 128 if my_profile['sheet_num'][cnt*len(meta_set) + m_cnt] % 2 > 0 else 0
                 my_rom[mem_loc+m_cnt] = meta_item
         
-        # CustomCharFlag_Standing = %00000001
-        # CustomCharFlag_Running = %00000010 unused
-        # CustomCharFlag_Fluttering = %00000100
-        # CustomCharFlag_PeachWalk = %00001000
-        # CustomCharFlag_WeaponCherry = %00010000 unused
-        # CustomCharFlag_StoreCherry = %00100000 unused
-        # CustomCharFlag_AirControl = %01000000 unused
-        # CustomCharFlag_WideSprite = %10000000
         mem_loc = my_mem_locs['DokiMode'] + char_num_a
         my_rom[mem_loc] = 0
         for x in CHAR_FLAGS:
@@ -307,35 +300,32 @@ def apply_characters_to_rom(my_rom, list_of_char, my_mem_locs):
         my_rom[mem_loc+8] = my_profile['carry'][1]
         my_rom[mem_loc+12] = 0xFF if my_profile['carry'][1] > 128 else 0
 
-        mem_loc = my_mem_locs['MarioPalette'] + char_num_a*4
-        p = [0xf] + my_profile['palette'][1:]
-        my_rom[mem_loc:mem_loc+4] = bytes(p)
-            
-        mem_loc = my_mem_locs['PlayerSelectSpritePalettes_Mario'] + old_num*7 + 3
-        my_rom[mem_loc:mem_loc+4] = bytes(p)
-        
         mem_loc = my_mem_locs['CharacterYOffsetCrouch'] + char_num_a
         my_rom[mem_loc] = my_profile['carry'][2]
         my_rom[mem_loc+4] = my_profile['carry'][3]
         
+        p = [0xf] + my_profile['palette'][1:]
+
+        write_palettes(my_rom, old_num, p, my_mem_locs)
+        
         write_names(my_rom, char_num, my_profile['name'], my_mem_locs)
 
-    bonus_stuff = [[], [], [], []]
+    bonus_stuff = [[], [], [], [], []]
 
     for cnt, char in enumerate([list_of_char[x] for x in range(4)]):
-        if not isinstance(char, dict):
-            for s in range(4):
-                mem_loc = 48 * 0x400 + 0x40000 + 0x200 * s + 0x80 * cnt
-                bonus_stuff[s].append(my_rom[mem_loc:mem_loc+0x80])
-        else:
-            for s in range(4):
-                bonus_stuff[s].append(char['extra_data'][s])
+        for s in range(5):
+            bonus_stuff[s].append(char['extra_data'][s])
 
     for cnt in range(4):
         mem_loc = 48 * 0x400 + 0x40000 + 0x200 * cnt
         my_rom[mem_loc:mem_loc+0x200] = [item for sublist in bonus_stuff[cnt] for item in sublist]
 
-# ec38 ending
+    cnt = 4
+    mem_loc = 72 * 0x400 + 0x40000
+    my_rom[mem_loc:mem_loc+0x100] = [item for sublist in bonus_stuff[cnt] for item in sublist[:0x40]]
+
+
+# change PC for ending (EndingSceneRoutine)
 def write_names(my_rom, char_num, name, my_mem_locs):
     char_num_a = CHAR_ORDER[char_num]
 
@@ -345,6 +335,28 @@ def write_names(my_rom, char_num, name, my_mem_locs):
     mem_loc = my_mem_locs['EndingCelebrationText_MARIO'] + 3 + 12*char_num_a
     my_rom[mem_loc:mem_loc+8] = list([ord(x) + 0x99 for x in name.upper()]+[0xfb]*8)[:8]
 
+
+def write_palettes(my_rom, char_num, p, my_mem_locs):
+    char_num_a = CHAR_ORDER[char_num]
+    char_num_b = CHAR_ORDER_SELECT[char_num]
+
+    p = [0xf] + list(p[1:])
+    my_mem_loc = my_mem_locs['MarioPalette'] + CHAR_ORDER[char_num_b]*4
+    my_rom[my_mem_loc:my_mem_loc+4] = bytes(p)
+        
+    my_mem_loc = my_mem_locs['PlayerSelectSpritePalettes_Mario'] + char_num*7 + 3
+    my_rom[my_mem_loc:my_mem_loc+4] = bytes(p)
+
+    p = [0x1] + list(p[1:])
+    # set_memory_location(my_rom, my_mem_locs, 'EndingCelebrationPaletteFade1', char_dict.spal, 16 + 3 + 4*c_id)
+    # set_memory_location(my_rom, my_mem_locs, 'MarioDream_Palettes', char_dict.spal.slice(1), 16 + 4 + 4 * c_id)
+    my_mem_loc = my_mem_locs['EndingCelebrationPaletteFade1'] + 3 + 16 + char_num*4
+    my_rom[my_mem_loc:my_mem_loc+4] = bytes(p)
+
+    my_mem_loc = my_mem_locs['MarioDream_Palettes'] + 3 + 16 + char_num*4
+    my_rom[my_mem_loc:my_mem_loc+4] = bytes(p)
+
+
 def paste_character_image(data, overlay):
     my_img = Image.open(data)
     lock = Image.open(overlay)
@@ -352,6 +364,7 @@ def paste_character_image(data, overlay):
     buffered = BytesIO()
     my_img.save(buffered, format="PNG")
     return base64.b64encode(buffered.getvalue())
+
 
 def base64_to_bytesio(item):
     return BytesIO(base64.b64decode(item))

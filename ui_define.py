@@ -162,8 +162,8 @@ layout_quick = [
         ]], justification='right', pad=(10,0)),
     ],
     [sg.Column([[
-        sg.Checkbox('Random Characters', key='presetRandomCharacters'),
-        sg.Checkbox('Palettes', key='presetRandomCharPal'),
+        sg.Text('Default Characters', key='presetRandomCharacters'),
+        sg.Checkbox('Random Palettes', key='presetRandomCharPal'),
         sg.Checkbox('Stats', key='presetRandomStats'),
         sg.Checkbox('Names', key='presetRandomNames'),
         ]], justification='right', pad=(10,0)),
