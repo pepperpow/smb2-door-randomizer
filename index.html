@@ -29,14 +29,15 @@
             snds = ['fx (2).wav', 'fx (22).wav']
 
             my_links = {
-                'Download client from Github': 'https://github.com/pepperpow/smb2-door-randomizer/releases',
-                'Source code': 'https://github.com/pepperpow/smb2-door-randomizer',
-                'Discord Link': ('https://discord.gg', 'gNXANyV')
+                'Download client from Github': ['https://github.com/pepperpow/smb2-door-randomizer/releases'],
+                'Source code': ['https://github.com/pepperpow/smb2-door-randomizer'],
+                'Discord Link': ['https://discord.gg', 'gNXANyV']
             }
             my_desc = {
                 'README': './README.md',
                 'CHANGELOG': './CHANGELOG.md',
             }
+
             active_snds = []
 
             for (let i = 0; i < snds.length; i++){
@@ -52,7 +53,7 @@
                 document.getElementById('loading').classList = ['hide_me']
                 link_list = document.getElementById('links')
                 for(var k in my_links){
-                    var v = link_list[k];
+                    var v = my_links[k].join('/')
                     var div = document.createElement("div");
                     var a = document.createElement("a")
                     a.innerHTML = k;

@@ -4,11 +4,19 @@
 
 The Super Mario Bros 2 Door Randomizer (SMB2DR for short) is a randomizer for Super Mario Bros 2/USA written in python3.
 
+Capable of randomizing the order of levels, it can also string together levels and put them in a large, map like setting.
+
+With world randomization and enemy randomization, and Custom Characters to implement.
+
 ### Releases
 
-While currently under development, releases will be placed at https://github.com/pepperpow/smb2-door-randomizer/releases
+While currently under development, releases will be placed at:
 
-ASM is located at https://github.com/pepperpow/smb2
+https://github.com/pepperpow/smb2-door-randomizer/releases
+
+ASM is located at:
+
+https://github.com/pepperpow/smb2
 
 ### Thanks to
 
@@ -38,6 +46,7 @@ As for features:
 - Character Select via Select+LR
 - Survival, which eliminates a character after all lives are lost
 - Force Characters per room
+- And more...
 
 Changes to gameplay:
 
@@ -83,14 +92,12 @@ Known things to fix:
 
 In order to run the program, execute `smb2_door_randomizer.exe` or run `smb2_door_randomizer.py` from source.
 
-A `Super Mario Bros 2 (U).nes` rom is required with the following PRGs or CRCs:
-
+A `Super Mario Bros 2 (U).nes` rom is required with the following MD5s or CRCs:
 
 PRG0/REV0
 - 47ba60fad332fdea5ae44b7979fe1ee78de1d316ee027fea2ad5fe3c0d86f25a
 - 0x7D3F6F3D
 - 0xE0CA425C
-
 
 PRG1/REVA
 - 6ca47e9da206914730895e45fef4f7393e59772c1c80e9b9befc1a01d7ecf724
