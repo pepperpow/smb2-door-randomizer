@@ -34,14 +34,11 @@ freeze_desc = {
     "version": "0.49",
     "description": "A small example package",
     "options":{
-        "build_exe": {'include_files': ['extras', 'icons', 'my_characters', 'my_levels', 'patch_data', 'README.md']}
+        "build_exe": {'include_files': ['extras', 'ui/icons', 'my_characters', 'my_levels', 'patch_data', 'README.md', 'CHANGELOG.md']}
     } ,
     "executables": [
     cx_Freeze.Executable(
         'smb2_door_randomizer.py', base=base, targetName="smb2_door_randomizer.exe", icon='icons/iconApp.ico'
-    ),
-    cx_Freeze.Executable(
-        'raw_to_tiled.py', targetName="raw_to_tiled.exe", icon='icons/iconEx.ico',
     )
     ]
 }

@@ -18,8 +18,6 @@ def try_to_patch_this_rom_okay(rom, force=False):
             my_patched_rom = patch_ips(rom, f.read())
             return my_patched_rom
     return None
-    
-
 
 def patch_ips (original, patch_data):
     # 

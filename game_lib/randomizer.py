@@ -1,11 +1,11 @@
 import random, copy
-from binascii import crc32
 
+import game_lib.disasm as disasm
 import game_lib.smb2 as smb2
+import game_lib.character as character
 import game_lib.level_modify as modify
 import game_lib.level_builder as builder
 import game_lib.map_builder as map_builder
-import game_lib.character as character
 
 def write_seed_to_screen(my_rom, my_mem_locs, text):
     for cnt, line in enumerate(text, 2):
@@ -258,12 +258,15 @@ def randomize_text(my_rom, values, mem_locs):
         custom_text_lines.append('')
     custom_text_lines.append('BTN A for Story')
 
-    crc_str = hex(crc32(my_rom[:0x40000])).upper()[2:]
+    crc_str = hex(disasm.crc32(my_rom[:0x40000])).upper()[2:]
     write_seed_to_screen(my_rom, mem_locs, [
         *custom_text_lines,
         'SEED     {}'.format(current_seed), 
         'PRG CRC32{}{}'.format(' '*(10 - len(crc_str)), crc_str)
     ])
+
+    loc = mem_locs['loc_BANK0_9BA7']
+    my_rom[loc+1] = 0x40
 
     # TitleStoryText_Line01
     loc = mem_locs['TitleStoryText_Line01']

@@ -4,10 +4,69 @@ import glob, os, random, re
 import PySimpleGUI as sg
 import threading
 
-import ui_define
+from ui.ui_define import layout_quick
+
+version = 0.49
+
 valid_seed_chrs = [str(x) for x in range(10)] + [chr(x) for x in range(65,65+26)]
 
-version = 0.45
+# TODO: why does slider not have a get function jeez
+# should maybe use pop-ups instead of tabs because sheesh
+
+sg.Slider.Get = lambda self: self.TKIntVar.get()
+
+sg.LOOK_AND_FEEL_TABLE['SMB2'] = {
+    'BACKGROUND': '#709053',
+    'TEXT': '#fff4c9',
+    'INPUT': '#c7e78b',
+    'TEXT_INPUT': '#000000',
+    'SCROLL': '#c7e78b',
+    'BUTTON': ('white', '#709053'),
+    'PROGRESS': ('#01826B', '#D0D0D0'),
+    'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
+    }
+
+sg.theme('DarkAmber')   # Add a touch of color '#e7cb52'
+sg.theme_button_color(('black', '#d82800'))
+
+seed_box = sg.InputText('', change_submits=True, key='seedbox', size=(30, None))
+
+def render_element(form, sub_n=0):
+    if isinstance(form, list):
+        my_element = [render_element(x, sub_n+1) for x in form]
+        print(my_element)
+        return my_element
+    else:
+        my_type = form['type'][0].capitalize() + form['type'][1:]
+    
+        if my_type == 'Frame':
+            return sg.Frame(form['title'], render_element(form['val']), key=form.get('key'))
+        if my_type == 'Column':
+            return sg.Column(render_element(form['val']), key=form.get('key'))
+        if my_type == 'Select':
+            return [sg.Text(form['title']), 
+                    sg.Combo(form['val'], key=form.get('key'), readonly=True,
+                    default_value=form['val'][0])]
+                # sg.Combo(my_chars_all, key='player1', readonly=True,\
+                # default_value=self.state['selected_chars'][0])],
+        if my_type == 'Checkbox':
+            return vars(sg)[my_type](form.get('val'), key=form.get('key'), metadata=form.get('meta'), default=form.get('default', False))
+        if my_type == 'Img':
+            my_type = 'Image'
+        if form.get('val'):
+            return vars(sg)[my_type](form.get('val'), key=form.get('key'), metadata=form.get('meta'))
+        else:
+            return vars(sg)[my_type](key=form.get('key'), metadata=form.get('meta'))
+
+layout_main = [
+    [sg.Button('Load File'), sg.Text('Seed'), seed_box, sg.Button('Randomize Seed')],
+    [sg.Column([
+        [sg.TabGroup([ 
+            [sg.Tab('Quick Start', render_element(layout_quick), element_justification='left' , pad=(20,20))]
+        ])]
+        ], vertical_scroll_only=True, expand_y=True, key='__main')
+    ],
+]
 
 default_chars = ('Mario', 'Luigi', 'Toad', 'Peach')
 class Application():
@@ -47,10 +106,20 @@ class Application():
             my_char_sets = glob.glob(os.path.join(char_set, '*.png'))
             for char in my_char_sets:
                 char_base, char_name = os.path.split(char)
-                char_name = char_name.split('.')[0].split(',')[0][:12]
+                char_name = os.path.basename(os.path.splitext(char_name)[0])
+                if ',' in char_name:
+                    cmds = [x for x in (char_name.split(','))]
+                    char_name, cmds = cmds[0], cmds[1:]
+                else:
+                    cmds = []
                 char_base = os.path.basename(char_base)
-                if char_base != 'base':
-                    char_name = '{} : {}'.format(char_name, char_base)
+                if char_base not in ['default']:
+                    if len(cmds):
+                        char_name = '{} ({}): {}'.format(char_name, ','.join(cmds), char_base)
+                    else:
+                        char_name = '{} : {}'.format(char_name, char_base)
+                    if char_base in ['base']:
+                        char_name = char_name.replace(': base','')
                 self.characters[char_name.capitalize()] = char
         self.active_chars = [x for x in self.characters.keys() if ':' not in x]
 
@@ -58,8 +127,20 @@ class Application():
         if os.path.isfile(filename):
             self.load_my_rom(filename, True)
 
-        self.window = sg.Window('SMB2 Door Randomizer', ui_define.layout_main, finalize=True)
-        self.seed_box = ui_define.seed_box
+        dummy_window = sg.Window('dummy', [[sg.Text('dummy')]], finalize=True)
+        my_h = dummy_window.TKroot.winfo_screenheight()
+        dummy_window.close()
+        self.window = sg.Window('SMB2 Door Randomizer', layout_main, titlebar_icon='ui/icons/iconApp.ico', icon='ui/icons/iconApp.ico')
+        if my_h < 800:
+            self.window['__main'].Scrollable = True
+            self.window.Resizable = True
+            self.window.Finalize()
+            self.window.size = (self.window.size[0], my_h-64)
+            self.window.move(20, 20)
+        else:
+            self.window.Finalize()
+
+        self.seed_box = seed_box
         self.seed_box.Update(self.current_seed)
 
         self.extra_settings = {
@@ -122,10 +203,10 @@ class Application():
         # run window
         # Threads
         if self.state['thread_state'] == 1:
-            small_window = sg.Window('Loading', [[sg.Image('icons/animatedwow.gif', key='image')], [sg.Text('Loading gam.................', key='taxt')]], keep_on_top=True, no_titlebar=True, grab_anywhere=True)
+            small_window = sg.Window('Loading', [[sg.Image('ui/icons/animatedwow.gif', key='image')], [sg.Text('Loading gam.................', key='taxt')]], keep_on_top=True, no_titlebar=True, grab_anywhere=True)
             while self.state['thread_state'] == 1:
                 event, _values = small_window.read(timeout=100)
-                small_window['image'].update_animation('icons/animatedwow.gif', time_between_frames=100)
+                small_window['image'].update_animation('ui/icons/animatedwow.gif', time_between_frames=100)
             small_window.close()
         if self.state['thread_state'] == 2:
             sg.PopupAutoClose('Rom outputted to smb2-output.nes!')
@@ -163,7 +244,7 @@ class Application():
             return True
         
         if 'Character Select' in event:
-            my_chars_all = ['?'] + [ x for x in self.characters.keys() ]
+            my_chars_all = ['?'] + sorted([ x for x in self.characters.keys() ])
 
             select_layout = [
             [sg.Text('Select Characters to each Slot')],
