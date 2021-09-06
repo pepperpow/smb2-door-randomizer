@@ -221,11 +221,14 @@ def randomize_characters(my_rom, values, active_chars, all_chars, mem_locs):
         character.apply_characters_to_rom(my_rom, char_loaded, mem_locs)
 
     if values['presetRandomNames']:
-        random_names = [x for x, y in all_chars.items()]
+        random_names = [x.split('(')[0] for x, y in all_chars.items()]
         random_names = [character.os.path.basename(x).split('.')[0].split(',')[0] for x in random_names]
         random_names = random.choices(random_names + RANDOM_NAMES_EXTRA, k=4)
+        print(random_names)
         for n, x in enumerate(random_names):
-            character.write_names(my_rom, n, x, mem_locs)
+            x = x.upper().strip()
+            x = ''.join(c if c in smb2.tbl else ' ' for c in x)[:8]
+            character.write_names(my_rom, n, x.upper(), mem_locs)
 
     # rewrite this to not be agnostic to each player
     # should randomize player palettes built into the game AND from files

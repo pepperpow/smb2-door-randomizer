@@ -34,7 +34,6 @@ seed_box = sg.InputText('', change_submits=True, key='seedbox', size=(30, None))
 def render_element(form, sub_n=0):
     if isinstance(form, list):
         my_element = [render_element(x, sub_n+1) for x in form]
-        print(my_element)
         return my_element
     else:
         my_type = form['type'][0].capitalize() + form['type'][1:]
@@ -326,7 +325,7 @@ class Application():
             return True
 
 
-        if 'Extra Settings' in event:
+        if 'More Settings' in event:
             types_affect = ['room', 'level']
             ex = self.extra_settings
             l_select_layout = [
