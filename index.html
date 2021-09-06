@@ -25,20 +25,18 @@
 
         </style>
 
-        <script src="ui/brython.js"></script>
-        <script src="ui/brython_stdlib.js"></script>
-
         <script>
-            var startingRom = 0
-
-            window.onload = function() {
-                brython()
-            }
-
-
-
             snds = ['fx (2).wav', 'fx (22).wav']
-            
+
+            my_links = {
+                'Download client from Github': 'https://github.com/pepperpow/smb2-door-randomizer/releases',
+                'Source code': 'https://github.com/pepperpow/smb2-door-randomizer',
+                'Discord Link': ('https://discord.gg', 'gNXANyV')
+            }
+            my_desc = {
+                'README': './README.md',
+                'CHANGELOG': './CHANGELOG.md',
+            }
             active_snds = []
 
             for (let i = 0; i < snds.length; i++){
@@ -50,15 +48,42 @@
                 active_snds[idx].play()
             }
 
+            window.onload = function(){
+                document.getElementById('loading').classList = ['hide_me']
+                link_list = document.getElementById('links')
+                for(var k in my_links){
+                    var v = link_list[k];
+                    var div = document.createElement("div");
+                    var a = document.createElement("a")
+                    a.innerHTML = k;
+                    a.href = v;
+                    div.append(a)
+                    link_list.append(div)
+                }
+                document.getElementById("big_form").innerHTML = ''
+
+                const xhttp = new XMLHttpRequest();
+                xhttp.onload = function() {
+                    document.getElementById("big_form").innerHTML = document.getElementById("big_form").innerHTML + this.responseText + '\n\n\n\n';
+                    xhttp.onload = function() {
+                        document.getElementById("big_form").innerHTML = document.getElementById("big_form").innerHTML + this.responseText;
+                    }
+                    xhttp.open("GET", "CHANGELOG.md", true);
+                    xhttp.send();
+                }
+                xhttp.open("GET", "README.md", true);
+                xhttp.send();
+
+                document.getElementById('main_window').classList = ['main_div']
+            }
+
         </script>
     </head>
     <body id='da_body'>
-        <script type="text/python" src="ui/web.py"></script>
-        <!-- <div id='loading' class=''>
+        <div id='loading' class=''>
             <img id='imloading' src="ui/icons/animatedwow.png"></img>
         </div>
-        <textarea id='rom_load' class='hide_me'></textarea> -->
-        <div id='main_window' class="main_div">
+        <div id='main_window' class="main_div hide_me">
             <div class="center">
                 <img src="ui/titletop2.png"></img>
                 <br>

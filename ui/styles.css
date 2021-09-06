@@ -6,6 +6,10 @@
     src: local(".SFNSText-Light"), local(".HelveticaNeueDeskInterface-Light"), local(".LucidaGrandeUI"), local("Ubuntu Light"), local("Segoe UI Light"), local("Roboto-Light"), local("DroidSans"), local("Tahoma");
 }
 
+.hide_me {
+    display: none
+}
+
 a {
     background-color: gray;
     color: white;
