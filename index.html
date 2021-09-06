@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<html>
+
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=540px, initial-scale=1.0">
+        <link rel="shortcut icon" type="image/x-icon" href="ui/icons/iconApp.ico">
+
+        <title>SMB2 Door Randomizer</title>
+        <meta name="description" content="Super Mario Brothers 2 Door Randomizer">
+        <meta name="author" content="pepperpow">
+
+        <link rel="stylesheet" href="ui/styles.css">
+        <style>
+            .header{
+                font-size: 24px;
+            }
+            .title{
+                font-size: 20px;
+            }
+            .desc{
+                font-size: 16px;
+            }
+
+        </style>
+
+        <script src="ui/brython.js"></script>
+        <script src="ui/brython_stdlib.js"></script>
+
+        <script>
+            var startingRom = 0
+
+            window.onload = function() {
+                brython()
+            }
+
+
+
+            snds = ['fx (2).wav', 'fx (22).wav']
+            
+            active_snds = []
+
+            for (let i = 0; i < snds.length; i++){
+                active_snds[i] = new Audio('ui/snd/' + snds[i])
+            }
+
+            function playDoor() {
+                idx = Math.floor( Math.random() * snds.length ) 
+                active_snds[idx].play()
+            }
+
+        </script>
+    </head>
+    <body id='da_body'>
+        <script type="text/python" src="ui/web.py"></script>
+        <!-- <div id='loading' class=''>
+            <img id='imloading' src="ui/icons/animatedwow.png"></img>
+        </div>
+        <textarea id='rom_load' class='hide_me'></textarea> -->
+        <div id='main_window' class="main_div">
+            <div class="center">
+                <img src="ui/titletop2.png"></img>
+                <br>
+                <img id="door" src="ui/door.png" onclick="playDoor()"></img>
+                <br>
+                <div class="">
+                    <div id="links">
+                    </div>
+                </div>
+                <div class="summarytext" id="big_form">
+                </div>
+            </div> 
+        </div>
+    </body>
+</html>
