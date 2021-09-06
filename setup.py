@@ -1,5 +1,7 @@
-import setuptools
-import cx_Freeze, sys
+
+import sys, os, glob
+import cx_Freeze
+
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -34,11 +36,11 @@ freeze_desc = {
     "version": "0.49",
     "description": "A small example package",
     "options":{
-        "build_exe": {'include_files': ['extras', 'ui/icons', 'my_characters', 'my_levels', 'patch_data', 'README.md', 'CHANGELOG.md']}
+        "build_exe": {'include_files': ['extras', 'my_characters', 'my_levels', 'patch_data', 'README.md', 'CHANGELOG.md', ('ui/icons', 'ui/icons')]}
     } ,
     "executables": [
     cx_Freeze.Executable(
-        'smb2_door_randomizer.py', base=base, targetName="smb2_door_randomizer.exe", icon='icons/iconApp.ico'
+        'smb2_door_randomizer.py', base=base, target_name="smb2_door_randomizer.exe", icon='ui/icons/iconApp.ico'
     )
     ]
 }
