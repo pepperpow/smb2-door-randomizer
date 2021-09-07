@@ -127,10 +127,12 @@ class LevelStorage():
     def process_level(level):
         my_level = []
         accessed_ids = set([0])
-        for room in level:
+        for cnt, room in enumerate(level):
             with open(room) as f:
                 room_dict = json.load(f)
             my_header = { x['name']: x['value'] for x in room_dict['properties'] }
+            if my_header.get('always_include'):
+                accessed_ids.add(cnt)
             is_vertical = my_header['horizontal'] == 0
             my_room_data = [x-1 if x!=0 else 0x40 for x in room_dict['layers'][0]['data']]
             my_enemies = [

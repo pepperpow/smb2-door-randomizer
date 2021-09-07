@@ -148,16 +148,18 @@ def map_maker(rooms, bosses):
                     edges[tuple(target_pos)] = tuple(target_room)
                     edges[tuple(target_room)] = tuple(target_pos)
     
+    # 2321CVMV2K
     random.shuffle(candidates)
     for room_cnt, boss in enumerate(bosses, len(slots)):
         print(len(bosses), boss)
         for target_pos, target_room in candidates:
             if len(num_of_candidates.get(target_pos)) > 1:
                 continue
-            if target_room is None or (tuple(target_room) not in occupied):
+            if target_room is None or (tuple(target_room) not in occupied or tuple(target_room) in edges):
                 continue
             if target_pos in occupied:
                 continue
+            # 2321CVMV2K
             slots[room_cnt] = boss
             boss.flags['my_slot'] = room_cnt
             boss.flags['coordinates'] = [target_pos] * boss.header['pages']
@@ -385,3 +387,66 @@ def map_stringer(slots, edges_by_level, boss_lock=False):
 
 
     return processed_data
+
+def map_to_html(my_map):
+    def format_cell(y):
+        if isinstance(y, str): return ''
+        output = []
+        spot, y = y
+        # if y.is_jar or y.has_boss: output.append('special')
+        if y.flags['my_slot'] == 0: output.append('start')
+        output.append('cell')
+        my_doors = [x for x in y.flags['doors']]
+        if not y.has_boss:
+            my_num = y.flags['coordinates'].index(spot)
+        else:
+            my_num = 0
+        if my_num in my_doors:
+            output.append('world{}'.format(y.world%7))
+        return ' '.join(output)
+
+    def text_cell(y):
+        if isinstance(y, str): return y
+        spot, y = y
+        if y.flags['my_slot'] == 0: return 'S'
+        if y.is_jar: return 'J'
+        if y.has_boss: return 'B'
+        my_num = y.flags['coordinates'].index(spot)
+        for i in ['mush_1', 'mush_2']:
+            if my_num == y.header.get(i):
+                return 'M,{}'.format(y.flags['my_slot'])
+        return y.flags['my_slot']
+
+    def title_cell(y):
+        if isinstance(y, str): return 'EMPTY'
+        spot, y = y
+        my_dict = {x:y for x,y in {**y.header, **y.flags}.items() if x in ['world', 'mush1', 'mush2', 'pages']}
+        my_dict['doors'] = [x for x in y.flags['doors']]
+        return '\n'.join(([str((x, y)) for x,y in my_dict.items()]))
+
+    me_table = '''<head>\
+        <style>\
+        td {width: 32px; height: 32px}
+        .start {font-size: 30;}\
+        .cell {background-color:#CCCCCC}\
+        .world0 {background-color:#88E299}\
+        .world1 {background-color:#FFE299}\
+        .world2 {background-color:#E29292}\
+        .world3 {background-color:#BFD6EE}\
+        .world4 {background-color:#D6EE}\
+        .world5 {background-color:#6EE}\
+        .world6 {background-color:#e022}\
+        .special {border: 4px dotted black;}\
+        </style>\
+    </head><html><table>'''
+    me_rows = []
+    row = '<tr>{}<tr>'
+    me_rows.append(row.format(''.join([
+        "<td>{}</td>".format(x) for x in ['x'] + list(range(len(my_map[0])))
+    ])))
+    for num, y in enumerate(my_map):
+        my_col = '<td>{}</td>'.format(str(num))
+        my_col += ''.join(['<td title="{}" class="{}">{}</td>\n'.format(title_cell(x), format_cell(x), text_cell(x)) for x in y])
+        me_rows.append(row.format(my_col))
+    me_table = me_table + ''.join(me_rows) + '</table></html>'
+    return me_table

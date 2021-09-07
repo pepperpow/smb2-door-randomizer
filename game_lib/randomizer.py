@@ -122,73 +122,18 @@ def randomize_rom(my_rom, my_mem_locs, values, game):
         if not values['betaShuffleLevel']:
             my_choices = sorted(my_choices, key=lambda x: x[0].header['id'])
         rooms = [x for x in [item for sublist in my_choices for item in sublist] if x is not None]
+
         if values['betaShuffleRoom']:
             random.shuffle(rooms)
 
         my_map, slots, edges_by_level = map_builder.map_maker(rooms, my_boss_rooms)
+
         rooms_data = map_builder.map_stringer(slots, edges_by_level, boss_lock=values['betaLockedDoors'])
+
         write_rooms_to_rom(my_new_rom, rooms_data, my_mem_locs)
 
-        def format_cell(y):
-            if isinstance(y, str): return ''
-            output = []
-            spot, y = y
-            # if y.is_jar or y.has_boss: output.append('special')
-            if y.flags['my_slot'] == 0: output.append('start')
-            output.append('cell')
-            my_doors = [x for x in y.flags['doors']]
-            if not y.has_boss:
-                my_num = y.flags['coordinates'].index(spot)
-            else:
-                my_num = 0
-            if my_num in my_doors:
-                output.append('world{}'.format(y.world%7))
-            return ' '.join(output)
+        me_table = map_builder.map_to_html(my_map)
 
-        def text_cell(y):
-            if isinstance(y, str): return y
-            spot, y = y
-            if y.flags['my_slot'] == 0: return 'S'
-            if y.is_jar: return 'J'
-            if y.has_boss: return 'B'
-            my_num = y.flags['coordinates'].index(spot)
-            for i in ['mush_1', 'mush_2']:
-                if my_num == y.header.get(i):
-                    return 'M,{}'.format(y.flags['my_slot'])
-            return y.flags['my_slot']
-
-        def title_cell(y):
-            if isinstance(y, str): return 'EMPTY'
-            spot, y = y
-            my_dict = {x:y for x,y in {**y.header, **y.flags}.items() if x in ['world', 'mush1', 'mush2', 'pages']}
-            my_dict['doors'] = [x for x in y.flags['doors']]
-            return '\n'.join(([str((x, y)) for x,y in my_dict.items()]))
-
-        me_table = '''<head>\
-            <style>\
-            td {width: 32px; height: 32px}
-            .start {font-size: 30;}\
-            .cell {background-color:#CCCCCC}\
-            .world0 {background-color:#88E299}\
-            .world1 {background-color:#FFE299}\
-            .world2 {background-color:#E29292}\
-            .world3 {background-color:#BFD6EE}\
-            .world4 {background-color:#D6EE}\
-            .world5 {background-color:#6EE}\
-            .world6 {background-color:#e022}\
-            .special {border: 4px dotted black;}\
-            </style>\
-        </head><html><table>'''
-        me_rows = []
-        row = '<tr>{}<tr>'
-        me_rows.append(row.format(''.join([
-            "<td>{}</td>".format(x) for x in ['x'] + list(range(len(my_map[0])))
-        ])))
-        for num, y in enumerate(my_map):
-            my_col = '<td>{}</td>'.format(str(num))
-            my_col += ''.join(['<td title="{}" class="{}">{}</td>\n'.format(title_cell(x), format_cell(x), text_cell(x)) for x in y])
-            me_rows.append(row.format(my_col))
-        me_table = me_table + ''.join(me_rows) + '</table></html>'
         with open('spoiler.html', 'w') as f:
             f.write(me_table)
 
