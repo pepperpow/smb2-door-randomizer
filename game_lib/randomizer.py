@@ -135,11 +135,14 @@ def randomize_rom(my_rom, my_mem_locs, values, game):
             spot, y = y
             # if y.is_jar or y.has_boss: output.append('special')
             if y.flags['my_slot'] == 0: output.append('start')
-            output.append('world{}'.format(y.world%7))
+            output.append('cell')
             my_doors = [x for x in y.flags['doors']]
-            my_num = y.flags['coordinates'].index(spot)
+            if not y.has_boss:
+                my_num = y.flags['coordinates'].index(spot)
+            else:
+                my_num = 0
             if my_num in my_doors:
-                output.append('special')
+                output.append('world{}'.format(y.world%7))
             return ' '.join(output)
 
         def text_cell(y):
@@ -165,6 +168,7 @@ def randomize_rom(my_rom, my_mem_locs, values, game):
             <style>\
             td {width: 32px; height: 32px}
             .start {font-size: 30;}\
+            .cell {background-color:#CCCCCC}\
             .world0 {background-color:#88E299}\
             .world1 {background-color:#FFE299}\
             .world2 {background-color:#E29292}\

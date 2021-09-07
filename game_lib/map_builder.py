@@ -23,14 +23,15 @@ add_tup = lambda a,b: tuple([a[x]+b[x] for x in range(len(a))])
 #   long since considered using A* pathing to determine this, but for another time or another programmer
 def map_maker(rooms, bosses):
     shape = 80
-    my_map = [ ['.' for y in range(shape)] for x in range(shape)]
+    my_map = [ ['.' for y in range(shape)] for x in range(shape)] # string or (coord, room_obj)
     candidates = []
     occupied, slots, edges = {}, {}, {}
     black_list = set()
 
     rooms = sorted(rooms, key=lambda x: x.header['pages'] == 0)
+    num_of_candidates = {}
 
-    for room_cnt, room in enumerate(rooms + bosses):
+    for room_cnt, room in enumerate(rooms):
         slots[room_cnt] = room
         room.flags['my_slot'] = room_cnt
         # if level is Not Valid
@@ -116,11 +117,23 @@ def map_maker(rooms, bosses):
             # print('this happened')
             # print((room_cnt, room_name))
     # print(my_map)
+    for target_pos, target_room in candidates:
+        if target_pos in num_of_candidates:
+            num_of_candidates[target_pos] += [target_room]
+        else:
+            num_of_candidates[target_pos] = [target_room]
 
     for target_pos, target_room in candidates:
         target_pos = tuple(target_pos)
-        if target_room is None or target_room is not None and (tuple(target_room) in edges or tuple(target_room) not in occupied):
+        if target_room is None:
             continue
+        if target_room is not None and (tuple(target_room) in edges or tuple(target_room) not in occupied):
+            continue
+        if len(num_of_candidates.get(target_pos)) > 1:
+            if target_pos not in occupied:
+                my_map[target_pos[0]][target_pos[1]] = 'X'
+            continue
+        
         target_room = tuple(target_room)
         if target_pos in occupied and target_pos not in edges:
             if random.randint(0, 1000) > 100:
@@ -134,7 +147,26 @@ def map_maker(rooms, bosses):
                 if solid_success:
                     edges[tuple(target_pos)] = tuple(target_room)
                     edges[tuple(target_room)] = tuple(target_pos)
-        pass
+    
+    random.shuffle(candidates)
+    for room_cnt, boss in enumerate(bosses, len(slots)):
+        print(len(bosses), boss)
+        for target_pos, target_room in candidates:
+            if len(num_of_candidates.get(target_pos)) > 1:
+                continue
+            if target_room is None or (tuple(target_room) not in occupied):
+                continue
+            if target_pos in occupied:
+                continue
+            slots[room_cnt] = boss
+            boss.flags['my_slot'] = room_cnt
+            boss.flags['coordinates'] = [target_pos] * boss.header['pages']
+            edges[tuple(target_pos)] = tuple(target_room)
+            edges[tuple(target_room)] = tuple(target_pos)
+            my_map[target_pos[0]][target_pos[1]] = (target_pos, boss)
+            print(target_pos)
+            occupied[tuple(target_pos)] = (room_cnt, 0)
+            break
 
     edges_by_level = {} 
     for edge in edges:
@@ -255,12 +287,15 @@ def map_stringer(slots, edges_by_level, boss_lock=False):
             if d is None: continue
             else:
                 # if cnt not in edges_by_level
-                my_coord_height = room.flags['coordinates'][cnt][0]
-                s_n, s_p = edges_by_level[(room_cnt, cnt)]
-                sub_coord = slots[s_n].flags['coordinates'][s_p][0]
-                my_top_tile = TileName.LightTrailRight if my_coord_height < sub_coord else TileName.LightTrailLeft
-                my_top_tile = TileName.LightTrail if my_coord_height == sub_coord else my_top_tile
-                my_top_tile = TileName.Phanto if door_type[cnt] == 4 else my_top_tile
+                if door_type[cnt] == 4:
+                    my_top_tile = TileName.Phanto
+                else:
+                    my_coord_height = room.flags['coordinates'][cnt][0]
+                    s_n, s_p = edges_by_level[(room_cnt, cnt)]
+                    sub_coord = slots[s_n].flags['coordinates'][s_p][0]
+                    my_top_tile = TileName.LightTrailRight if my_coord_height < sub_coord else TileName.LightTrailLeft
+                    my_top_tile = TileName.LightTrail if my_coord_height == sub_coord else my_top_tile
+                    my_top_tile = TileName.Phanto if door_type[cnt] == 4 else my_top_tile
                 p = find_sturdy_surface(cnt, my_room_map, room.vertical)
                 if p is None:
                     print('FLINCH')
