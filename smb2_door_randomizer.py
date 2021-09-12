@@ -4,7 +4,7 @@ import glob, os, random, re
 import PySimpleGUI as sg
 import threading
 
-from ui.ui_define import layout_quick
+from ui.ui_define import layout_quick, layout_titls
 
 version = "0.49.8a"
 
@@ -37,33 +37,39 @@ def render_element(form, sub_n=0):
         return my_element
     else:
         my_type = form['type'][0].capitalize() + form['type'][1:]
+        my_val = form.get('val')
+        if 'tooltip' not in form and my_type != 'Text':
+            form['tooltip'] = '...'
     
         if my_type == 'Frame':
-            return sg.Frame(form['title'], render_element(form['val']), key=form.get('key'))
+            return sg.Frame(form['title'], render_element(form['val']), key=form.get('key'), expand_x=True)
         if my_type == 'Column':
             return sg.Column(render_element(form['val']), key=form.get('key'))
         if my_type == 'Select':
-            return [sg.Text(form['title']), 
+            column_stuff = [sg.Text(form['title']), 
                     sg.Combo(form['val'], key=form.get('key'), readonly=True,
                     default_value=form['val'][0])]
+            return sg.Column([column_stuff])
                 # sg.Combo(my_chars_all, key='player1', readonly=True,\
                 # default_value=self.state['selected_chars'][0])],
-        if my_type == 'Checkbox':
-            return vars(sg)[my_type](form.get('val'), key=form.get('key'), metadata=form.get('meta'), default=form.get('default', False))
+        form = {x:y for x,y in form.items() if x not in ['type', 'val']}
         if my_type == 'Img':
             my_type = 'Image'
-        if form.get('val'):
-            return vars(sg)[my_type](form.get('val'), key=form.get('key'), metadata=form.get('meta'))
+        if my_val:
+            return vars(sg)[my_type](my_val, **form)
         else:
-            return vars(sg)[my_type](key=form.get('key'), metadata=form.get('meta'))
+            return vars(sg)[my_type](**form)
 
+            # [sg.Tab('Quick Start', render_element(layout_quick), element_justification='left' , pad=(20,20))]
 layout_main = [
     [sg.Button('Load File'), sg.Text('Seed'), seed_box, sg.Button('Randomize Seed')],
     [sg.Column([
         [sg.TabGroup([ 
-            [sg.Tab('Quick Start', render_element(layout_quick), element_justification='left' , pad=(20,20))]
-        ])]
-        ], vertical_scroll_only=True, expand_y=True, key='__main')
+            [sg.Tab(name, [render_element(x)], expand_x=True) for name, x in zip(layout_titls, layout_quick[:3])]
+        ], expand_x=True),
+        ],
+        render_element(layout_quick[3])
+        ], vertical_scroll_only=True, expand_y=True, expand_x=True, key='__main')
     ],
 ]
 
@@ -77,6 +83,7 @@ class Application():
             'my_header': None,
             'my_rom': None,
             'my_mem_locs': None,
+            'last_event': '',
             'thread_state': 0,
             'selected_chars': list(default_chars)
         }
@@ -208,7 +215,10 @@ class Application():
                 small_window['image'].update_animation('ui/icons/animatedwow.gif', time_between_frames=100)
             small_window.close()
         if self.state['thread_state'] == 2:
-            sg.PopupAutoClose('Rom outputted to smb2-output.nes!')
+            if 'boss' not in self.state['last_state']:
+                sg.PopupAutoClose('Rom outputted to smb2-output.nes!')
+            else:
+                sg.PopupAutoClose('Rom outputted to smb2-output.nes!\nSpoiler in spoiler.html')
             self.state['thread_state'] = 0
         if self.state['thread_state'] == 3:
             sg.PopupError(self.queue.pop())
@@ -259,7 +269,7 @@ class Application():
             [sg.Text('Slot 4'),
             sg.Combo(my_chars_all, key='player4', readonly=True,\
                 default_value=self.state['selected_chars'][3])],
-            [sg.OK(), sg.Cancel(), sg.Button('Random Pool')]]
+            [sg.OK(), sg.Cancel(), sg.Button('Random')]]
 
             # Create the Window
             window = sg.Window('Character Select', select_layout)
@@ -267,7 +277,7 @@ class Application():
             while True:             
                 event, values = window.read()
                 if event in (sg.WIN_CLOSED, 'Cancel'): break
-                elif event in ('Random Pool'):
+                elif event in ('Random'):
                     while True:
                         select_layout_random = [
                         [sg.Text('Select Characters to randomize into selection')],
@@ -387,6 +397,16 @@ class Application():
             # There ought to be a better way to poll all window elements into an options dictionary
             meta = self.window[event].metadata
             self.state['thread_state'] = 1
+            self.state['last_state'] = event
+
+            if 'boss' in event or 'string' in event:
+                open_levels = [y for x,y in self.active_levels.items() if 'openworld' in x]
+                if len(open_levels) == 0:
+                    sg.PopupAutoClose('Automatically selecting openworld levels...', auto_close_duration=3)
+                    open_levels = [y for x,y in self.level_sets.items() if 'openworld' in x.split(' ')]
+                game = randomizer.smb2.LevelStorage((open_levels))
+            else:
+                game = randomizer.smb2.LevelStorage((self.active_levels.values()))
 
             def thread_logic(): 
                 try:
@@ -398,18 +418,6 @@ class Application():
 
                     for x in self.extra_settings:
                         values[x] = self.extra_settings[x]
-
-                    if 'boss' in event:
-                        open_levels = [y for x,y in self.active_levels.items() if 'openworld' in x]
-                        if len(open_levels) == 0:
-                            self.queue.append('Error has occurred: Map-based randomization REQUIRES openworld patched levels, select in Level Select')
-                            self.state['thread_state'] = 3
-                            return True
-                        else:
-                            game = randomizer.smb2.LevelStorage(sorted(open_levels))
-                    else:
-                        game = randomizer.smb2.LevelStorage(sorted(self.active_levels.values()))
-
 
                     values['presetRandomCharacters'] = 'Randomized' in self.window['presetRandomCharacters'].get()
                     my_new_rom = randomizer.randomize_rom(self.state['my_rom'], self.state['my_mem_locs'], values, game); 

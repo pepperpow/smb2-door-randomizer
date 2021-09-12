@@ -7,6 +7,7 @@ import game_lib.level_modify as modify
 import game_lib.level_builder as builder
 import game_lib.map_builder as map_builder
 
+
 def write_seed_to_screen(my_rom, my_mem_locs, text):
     """
     convert set of lines to bytes for seed block
@@ -30,6 +31,8 @@ def randomize_rom(my_rom, my_mem_locs, values, game):
 
     ### Get settings
     my_k = values['levelAmount'] if 'Generate' in event else metadata.get('k', 12)
+    if 'boss' in event and values['presetMapScale'] != 'Default':
+        my_k = int(values['presetMapScale'])
     my_boss_cnt = values['bossCnt'] if 'Generate' in event else metadata.get('boss', 1)
     my_new_rom[my_mem_locs['BossCondition']] = my_boss_cnt
 
@@ -76,6 +79,9 @@ def randomize_rom(my_rom, my_mem_locs, values, game):
     # Get boss rooms
     my_boss_rooms = [x for x in [i for sublist in all_levels for i in sublist] if x is not None and x.has_boss]
 
+    for cnt, boss in enumerate(my_boss_rooms):
+        boss.flags['boss_world'] = cnt
+
     # String up new levels, otherwise use default levels
     if 'string' in event:
         my_choices = builder.room_stringer(all_levels, my_k)
@@ -92,6 +98,7 @@ def randomize_rom(my_rom, my_mem_locs, values, game):
             if (cnt % 3 == 2) or (cnt + 1 == my_k):
                 open_room = my_choices[cnt].index(None)
                 my_choices[cnt][open_room] = random.choice(copy.deepcopy(my_boss_rooms))
+                my_choices[cnt][open_room].flags['boss_world'] = cnt//3
                 print('Adding Boss Room')
 
     # Set up Level variables and patch Original Levels
@@ -126,8 +133,6 @@ def randomize_rom(my_rom, my_mem_locs, values, game):
             room.flags['boss_health'] = random.randint(values['bossMin'], values['bossMax'])
             room.flags['convert_world'] = room.world
 
-        # patch levels if they need them here
-    
     # String levels normally... else
     if any(x in event for x in ['basic', 'Linear', 'string']):
         rooms_data = builder.level_stringer(my_new_rom, my_choices, my_mem_locs)
@@ -213,6 +218,8 @@ def randomize_text(my_rom, values, mem_locs, version="000"):
     current_seed = values['seed']
     event, metadata = values['event'], values['meta']
     my_k = values['levelAmount'] if 'Generate' in event else metadata.get('k', 12)
+    if 'boss' in event and values['presetMapScale'] != 'Default':
+        my_k = int(values['presetMapScale'])
 
     custom_text_lines = ['WITH {} LEVELS'.format(my_k) ]
     if my_rom[mem_locs['WinLevel']] != 0xFF:
@@ -358,7 +365,7 @@ def write_rooms_to_rom(my_rom, room_datas, my_mem_locs):
             my_func_ptr = [my_function >> 8, my_function % 256]
             extra_byte_blocks.append(bytes([0xfc, 0x06, 0x34, 0x01, my_room.world] + [0xfa, *my_func_ptr]))
         if my_room.info.has_boss:
-            extra_byte_blocks.append(bytes([0xfc, 0x06, 0x35, 0x01, my_room.info.world]))
+            extra_byte_blocks.append(bytes([0xfc, 0x06, 0x35, 0x01, my_room.info.flags['boss_world']]))
         if my_room.info.is_jar == 2:
             extra_byte_blocks.append(bytes([0xfc, 0x04, 0xee, 0x01, 0x02]))
         if 'boss_health' in my_room.info.flags:
