@@ -8,8 +8,6 @@ from game_lib.level_modify import convertMyTile, convertMyEnemy, apply_command
 import game_lib.level_tokenize as token
 from game_lib.level_modify import rotate_me_room, find_sturdy_surface
 
-
-c_rand = ['blue', 'black', 'green', 'purple']
 up = [0, -1]
 down = [0, 1]
 left = [-1, 0]
@@ -285,10 +283,12 @@ def map_stringer(slots, edges_by_level, boss_lock=False):
 
         room.flags['doors'] = [n for n, x in enumerate(door_data) if x]
         for cnt, d in enumerate(door_data):
-            if room.has_boss or room.is_jar: break
+            if room.has_boss: break
             if d is None: continue
             else:
                 # if cnt not in edges_by_level
+                if room.is_jar and cnt == 0:
+                    continue
                 if door_type[cnt] == 4:
                     my_top_tile = TileName.Phanto
                 else:

@@ -6,9 +6,9 @@ import threading
 
 from ui.ui_define import layout_quick
 
-version = 0.49
+version = "0.49.8a"
 
-valid_seed_chrs = [str(x) for x in range(10)] + [chr(x) for x in range(65,65+26)]
+valid_seed_chrs = [x for x in 'ABCDEFGHIJKLMNPQRSTUVWXYZ0123456789']
 
 # TODO: why does slider not have a get function jeez
 # should maybe use pop-ups instead of tabs because sheesh
@@ -129,7 +129,7 @@ class Application():
         dummy_window = sg.Window('dummy', [[sg.Text('dummy')]], finalize=True)
         my_h = dummy_window.TKroot.winfo_screenheight()
         dummy_window.close()
-        self.window = sg.Window('SMB2 Door Randomizer', layout_main, titlebar_icon='ui/icons/iconApp.ico', icon='ui/icons/iconApp.ico')
+        self.window = sg.Window('SMB2 Door Randomizer {}'.format(version), layout_main, titlebar_icon='ui/icons/iconApp.ico', icon='ui/icons/iconApp.ico')
         if my_h < 800:
             self.window['__main'].Scrollable = True
             self.window.Resizable = True
@@ -425,7 +425,7 @@ class Application():
 
                     randomizer.randomize_characters(my_new_rom, values, my_selects, {x:y for x,y in self.characters.items() if x in my_selects + my_actives}, self.state['my_mem_locs'])
 
-                    randomizer.randomize_text(my_new_rom, values, self.state['my_mem_locs'])
+                    randomizer.randomize_text(my_new_rom, values, self.state['my_mem_locs'], version)
 
                     with open('smb2-output.nes', 'wb') as f:
                         f.write(self.state['my_header'])
