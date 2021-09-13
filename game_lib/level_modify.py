@@ -16,7 +16,7 @@ def find_sturdy_surface(page, my_room_map, vertical):
     random.shuffle(positions)
     for p in positions:
         tile_solid = my_map[p[1]][p[0]]
-        if tile_solid in [TileName.Spikes,TileName.POWBlock]:
+        if tile_solid in [TileName.Spikes,TileName.POWBlock,TileName.MushroomBlock]:
             continue
         if smb2.get_solidness(tile_solid) > 1:
             my_tile = my_map[p[1]-1][p[0]]
@@ -60,6 +60,31 @@ def invert_level(room):
         new_doors = {room.header['pages'] - int(x): room.doors[x] for x in room.doors}
 
     return my_room_map, new_enemies, new_doors
+
+
+def shuffle_mush(room):
+    my_mushes = [x for x in room.data if x in [TileName.SubspaceMushroom1, TileName.SubspaceMushroom2]]
+    import pdb; pdb.set_trace()
+
+valid_tiles = [TileName.GrassPotion]
+
+swappable_veg = [TileName.GrassLargeVeggie, TileName.GrassSmallVeggie]
+
+swappable_pow = [TileName.GrassShell, TileName.GrassPow, TileName.GrassBobOmb]
+
+def shuffle_herbs(room):
+    # GrassCoin = 0x43
+    # GrassLargeVeggie = 0x44
+    # GrassSmallVeggie = 0x45
+    # GrassRocket = 0x46
+    # GrassShell = 0x47
+    # GrassBomb = 0x48
+    # GrassPotion = 0x49
+    # Grass1UP = 0x4A
+    # GrassPow = 0x4B
+    # GrassBobOmb = 0x4C
+    my_bushes = [x for x in room.data if x in valid_tiles + swappable_pow + swappable_veg]
+    import pdb; pdb.set_trace()
 
 
 def flip_enemy(e, vertical, my_pages):

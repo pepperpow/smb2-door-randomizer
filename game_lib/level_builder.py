@@ -2,7 +2,7 @@ import random, copy
 from types import SimpleNamespace
 
 import game_lib.smb2 as smb2
-from game_lib.smb2 import ClimbableTiles, EnemyName, TileName
+from game_lib.smb2 import ClimbableTiles, EnemyName, TileName, enemy_data_to_json
 import game_lib.level_tokenize as token
 from game_lib.level_modify import convertMyTile, convertMyEnemy, apply_command
 
@@ -27,6 +27,7 @@ def level_stringer(my_rom, levels, my_mem_locs):
     """
     levels_data = []
     for cnt, choice in enumerate(levels):
+        # Index a boss in this level, or safely ValueError
         try:
             boss_room = [room is not None and room.has_boss for room in choice].index(True)
         except ValueError:
@@ -45,14 +46,16 @@ def level_stringer(my_rom, levels, my_mem_locs):
             # TODO: Write metadata to point to file specifically
             for page in range(10):
                 my_door = my_room.doors.get(page, None)
-                my_enemy_of_page = [x for x in my_enemies if x['page'] == page]
+                my_enemy_of_page = [EnemyName(x['type']) for x in my_enemies if x['page'] == page]
 
                 if room_cnt == 0 and my_room.flags.get('inverted') and not my_room.vertical:
                     my_rom[my_mem_locs['StartingPage'] + 1] = my_room.header['pages']
 
                 hawkmouth_end = EnemyName.HawkmouthLeft if not my_room.flags.get('inverted') else EnemyName.HawkmouthRight
+                if EnemyName.HawkmouthBoss in my_enemy_of_page:
+                    hawkmouth_end = EnemyName.HawkmouthBoss
 
-                if hawkmouth_end in [EnemyName(x['type']) for x in my_enemy_of_page]:
+                if hawkmouth_end in my_enemy_of_page:
                     if boss_room > -1:
                         door_data.append(([cnt, ( boss_room << 4 )]))
                         my_rom[my_mem_locs['WinLevel']] = cnt * 10 + boss_room 

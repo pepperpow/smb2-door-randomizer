@@ -8,8 +8,6 @@ from game_lib.level_modify import convertMyTile, convertMyEnemy, apply_command
 import game_lib.level_tokenize as token
 from game_lib.level_modify import rotate_me_room, find_sturdy_surface
 
-
-c_rand = ['blue', 'black', 'green', 'purple']
 up = [0, -1]
 down = [0, 1]
 left = [-1, 0]
@@ -28,7 +26,8 @@ def map_maker(rooms, bosses):
     occupied, slots, edges = {}, {}, {}
     black_list = set()
 
-    rooms = sorted(rooms, key=lambda x: x.header['pages'] == 0)
+    single_rooms = [x for x in rooms if x.header['pages'] == 0 or x.is_jar]
+    rooms = [x for x in rooms if x.header['pages'] > 0 and not x.is_jar]
     num_of_candidates = {}
 
     for room_cnt, room in enumerate(rooms):
@@ -71,6 +70,7 @@ def map_maker(rooms, bosses):
                 else:
                     adjusted_coords = [add_tup(n_pos, (0, x)) for x in range(pages + 1)]
 
+                # if any of our spaces would be filled... skip this jitter
                 if any([tuple(x) in occupied for x in adjusted_coords]): continue
                 try: [my_map[p[0]][p[1]] for p in adjusted_coords]
                 except: 
@@ -84,17 +84,13 @@ def map_maker(rooms, bosses):
                         if solid_success and target_room is not None:
                             edges[tuple(n_pos)] = tuple(target_room)
                             edges[tuple(target_room)] = tuple(n_pos)
+                # if we didn't have a way to put down a door, this is a false positive
                 if not solid_success: 
                     print('no solid...')
                     continue
+                # set our cooridnates
                 room.flags['coordinates'] = adjusted_coords
                 for page, n_pos in enumerate(adjusted_coords):
-                    # key = str(room_cnt % 10)
-                    # if room.is_jar > 0: key = 'J'
-                    # for c in [x for x in commands if x.page == page]:
-                    #     if any([chr(x) in c.tiles for x in [TileName.SubspaceMushroom1, TileName.SubspaceMushroom2]]):
-                    #         key = 'M'; break
-                    # if room.has_boss: key = 'B'
                     my_map[n_pos[0]][n_pos[1]] = (n_pos, room)
                     occupied[tuple(n_pos)] = (room_cnt, page)
                 # label our new candidate positions
@@ -122,14 +118,20 @@ def map_maker(rooms, bosses):
             num_of_candidates[target_pos] += [target_room]
         else:
             num_of_candidates[target_pos] = [target_room]
+    
+    def is_cell_surrounded(target_pos):
+        return len(num_of_candidates.get(target_pos)) > 1
 
+    # Do some extra stuff
+    # set cells as surrounded
+    # If two adjacent cells are occupied, randomly create a pair of doors
     for target_pos, target_room in candidates:
         target_pos = tuple(target_pos)
         if target_room is None:
             continue
         if target_room is not None and (tuple(target_room) in edges or tuple(target_room) not in occupied):
             continue
-        if len(num_of_candidates.get(target_pos)) > 1:
+        if is_cell_surrounded(target_pos):
             if target_pos not in occupied:
                 my_map[target_pos[0]][target_pos[1]] = 'X'
             continue
@@ -149,23 +151,23 @@ def map_maker(rooms, bosses):
                     edges[tuple(target_room)] = tuple(target_pos)
     
     # 2321CVMV2K
+    # place our single rooms seperately
     random.shuffle(candidates)
-    for room_cnt, boss in enumerate(bosses, len(slots)):
-        print(len(bosses), boss)
+    for room_cnt, single_room in enumerate(single_rooms + bosses, len(slots)):
         for target_pos, target_room in candidates:
-            if len(num_of_candidates.get(target_pos)) > 1:
+            if is_cell_surrounded(target_pos):
                 continue
             if target_room is None or (tuple(target_room) not in occupied or tuple(target_room) in edges):
                 continue
             if target_pos in occupied:
                 continue
             # 2321CVMV2K
-            slots[room_cnt] = boss
-            boss.flags['my_slot'] = room_cnt
-            boss.flags['coordinates'] = [target_pos] * boss.header['pages']
+            slots[room_cnt] = single_room
+            single_room.flags['my_slot'] = room_cnt
+            single_room.flags['coordinates'] = [target_pos] * (single_room.header['pages'] + 1)
             edges[tuple(target_pos)] = tuple(target_room)
             edges[tuple(target_room)] = tuple(target_pos)
-            my_map[target_pos[0]][target_pos[1]] = (target_pos, boss)
+            my_map[target_pos[0]][target_pos[1]] = (target_pos, single_room)
             print(target_pos)
             occupied[tuple(target_pos)] = (room_cnt, 0)
             break
@@ -285,10 +287,12 @@ def map_stringer(slots, edges_by_level, boss_lock=False):
 
         room.flags['doors'] = [n for n, x in enumerate(door_data) if x]
         for cnt, d in enumerate(door_data):
-            if room.has_boss or room.is_jar: break
+            if room.has_boss: break
             if d is None: continue
             else:
                 # if cnt not in edges_by_level
+                if room.is_jar and cnt == 0:
+                    continue
                 if door_type[cnt] == 4:
                     my_top_tile = TileName.Phanto
                 else:
@@ -410,8 +414,11 @@ def map_to_html(my_map):
         spot, y = y
         if y.flags['my_slot'] == 0: return 'S'
         if y.is_jar: return 'J'
-        if y.has_boss: return 'B'
+        if y.has_boss: return 'B#{}'.format(y.flags['boss_world'])
         my_num = y.flags['coordinates'].index(spot)
+        keys = [x['page'] for x in y.enemies if x['type'] in [EnemyName.Key, EnemyName.CrystalBall]]
+        if my_num in keys:
+            return 'K,{}'.format(y.flags['my_slot'])
         for i in ['mush_1', 'mush_2']:
             if my_num == y.header.get(i):
                 return 'M,{}'.format(y.flags['my_slot'])
