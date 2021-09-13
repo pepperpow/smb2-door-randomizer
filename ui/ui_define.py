@@ -70,7 +70,6 @@ other_stuff = {'type':'column', 'val':[[
 extra_settings = {'type':'frame', 'title':'Extra Settings', 'val':[
     [bonus_settings_1],
     [bonus_settings_2],
-    [bonus_settings_3],
     [char_rules],
     [char_stuff],
     [other_stuff],

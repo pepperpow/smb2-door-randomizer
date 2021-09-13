@@ -119,7 +119,9 @@ def randomize_rom(my_rom, my_mem_locs, values, game):
             if values['presetInvert'] and not room.has_boss:
                 invert_chance = invert_chance if values['invertPer'] == 'level' else random.random()
                 if invert_chance*100 < values['invertChance']:
-                    room.data, room.enemies, room.doors = modify.invert_level(room)
+                    my_enemy_of_page = [smb2.EnemyName(x['type']) for x in room.enemies]
+                    if not any([x in my_enemy_of_page for x in [smb2.EnemyName.HawkmouthBoss, smb2.EnemyName.Birdo]]):
+                        room.data, room.enemies, room.doors = modify.invert_level(room)
 
             if values['presetWorldShuffle'] and not room.has_boss and not room.is_jar:
                 room.flags['convert_world'] = level_world if values ['worldPer'] == 'level' else random.randint(0,6)
