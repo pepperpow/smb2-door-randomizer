@@ -137,11 +137,6 @@
          "value":"0,1"
         }, 
         {
-         "name":"doorptr_page9",
-         "type":"string",
-         "value":"2,0"
-        }, 
-        {
          "name":"exterior_type",
          "type":"int",
          "value":0
@@ -202,11 +197,6 @@
          "value":"door"
         }, 
         {
-         "name":"transition_page9",
-         "type":"string",
-         "value":"door"
-        }, 
-        {
          "name":"unk1",
          "type":"int",
          "value":0
@@ -237,7 +227,7 @@
          "value":2
         }],
  "renderorder":"right-down",
- "tiledversion":"1.7.2",
+ "tiledversion":"1.7.1",
  "tileheight":16,
  "tilesets":[
         {
