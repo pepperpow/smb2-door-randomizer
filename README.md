@@ -18,6 +18,10 @@ ASM is located at:
 
 https://github.com/pepperpow/smb2
 
+For playing the game, help, or for bug reporting outside of github:
+
+https://discord.gg/gNXANyV
+
 ### Thanks to
 
 KMCK/Xkeeper - assembly/prog help
